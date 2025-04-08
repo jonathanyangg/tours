@@ -7,6 +7,8 @@ import tempfile
 import os
 from typing import List
 import json
+import io
+from .vectorization import process_and_store_tour_guides
 
 router = APIRouter()
 
@@ -44,59 +46,40 @@ def create_schema():
 
 @router.post("/upload-tour-guides")
 async def upload_tour_guides(file: UploadFile = File(...)):
+    """Upload and process a CSV file of tour guides.
+    
+    The CSV should have at least 3 columns:
+    1. ID
+    2. Gender
+    3. Grade
+    All remaining columns will be combined into a text representation for embedding.
+    """
     if not file.filename.endswith('.csv'):
         raise HTTPException(status_code=400, detail="File must be a CSV")
     
     try:
-        # Save uploaded file temporarily
-        with tempfile.NamedTemporaryFile(delete=False, suffix='.csv') as temp_file:
-            content = await file.read()
-            temp_file.write(content)
-            temp_file.flush()
-            
-            # Read CSV with pandas
-            df = pd.read_csv(temp_file.name)
-            
-            # Create schema if it doesn't exist
-            create_schema()
-            
-            # Process each row
-            for _, row in df.iterrows():
-                # Create text representation for embedding
-                text_rep = f"{row['sports']} {row['hometown']} {row['academic_interests']}"
-                
-                # Prepare data object
-                data_object = {
-                    "name": row['name'],
-                    "sports": row['sports'],
-                    "hometown": row['hometown'],
-                    "academic_interests": row['academic_interests'],
-                    "text_representation": text_rep
-                }
-                
-                # Add to Weaviate
-                client.data_object.create(
-                    data_object=data_object,
-                    class_name="TourGuide"
-                )
-            
-            # Clean up
-            os.unlink(temp_file.name)
-            
-            return JSONResponse(
-                content={"message": f"Successfully processed {len(df)} tour guides"},
-                status_code=200
-            )
+        # Read the uploaded file
+        content = await file.read()
+        df = pd.read_csv(io.BytesIO(content))
+        
+        # Process and store the tour guides
+        result = process_and_store_tour_guides(df)
+        
+        return JSONResponse(
+            content=result,
+            status_code=200
+        )
             
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/tour-guides")
 async def get_tour_guides():
+    """Retrieve all tour guides from Weaviate."""
     try:
         result = (
             client.query
-            .get("TourGuide", ["name", "sports", "hometown", "academic_interests"])
+            .get("TourGuide", ["id", "gender", "grade", "text_representation"])
             .do()
         )
         return result
