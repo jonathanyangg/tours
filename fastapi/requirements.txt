@@ -25,3 +25,4 @@ pandas==2.2.1
 weaviate-client==4.5.0
 sentence-transformers==2.5.1
 python-magic==0.4.27
+openai==1.12.0
