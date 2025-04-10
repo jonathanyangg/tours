@@ -4,6 +4,15 @@ from sentence_transformers import SentenceTransformer
 import weaviate
 from typing import List, Dict
 import logging
+import os
+from dotenv import load_dotenv
+import openai
+
+# Load environment variables
+load_dotenv()
+
+# Configure OpenAI
+openai.api_key = os.environ.get("OPENAI_API_KEY")
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -56,7 +65,7 @@ def format_dataframe_columns(df: pd.DataFrame, start_pos: int = 3) -> pd.DataFra
     return df
 
 def generate_embeddings(texts: List[str], batch_size: int = 20) -> List[List[float]]:
-    """Generate embeddings for a list of texts using sentence-transformers.
+    """Generate embeddings for a list of texts using OpenAI's ada-002 model.
     
     Args:
         texts: List of text strings to get embeddings for
@@ -82,9 +91,13 @@ def generate_embeddings(texts: List[str], batch_size: int = 20) -> List[List[flo
             
             logger.info(f"Processing batch {i//batch_size + 1} of {len(texts)//batch_size + 1}")
             
-            # Generate embeddings using sentence-transformers
-            batch_embeddings = model.encode(cleaned_batch, show_progress_bar=False)
-            all_embeddings.extend(batch_embeddings.tolist())
+            # Generate embeddings using OpenAI's ada-002 model
+            response = openai.Embedding.create(
+                input=cleaned_batch,
+                model="text-embedding-ada-002"
+            )
+            batch_embeddings = [data.embedding for data in response.data]
+            all_embeddings.extend(batch_embeddings)
             
         except Exception as e:
             logger.error(f"Error in batch {i//batch_size + 1}: {e}")
@@ -103,6 +116,17 @@ def process_and_store_tour_guides(df: pd.DataFrame) -> Dict:
     """
     try:
         # Create schema if it doesn't exist
+        create_schema()
+        
+        # Clear existing data
+        logger.info("Clearing existing tour guide data...")
+        try:
+            client.schema.delete_class("TourGuide")
+            logger.info("Deleted existing TourGuide class")
+        except Exception as e:
+            logger.warning(f"Could not delete existing TourGuide class: {e}")
+        
+        # Recreate the schema
         create_schema()
         
         # Format the text representation
