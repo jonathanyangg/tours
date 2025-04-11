@@ -3,14 +3,17 @@ from fastapi.responses import JSONResponse
 import pandas as pd
 import tempfile
 import os
-from typing import List
+from typing import List, Dict
 import json
 import io
 import logging
 from dotenv import load_dotenv
-from .vectorization import process_and_store_tour_guides, create_schema
+from .vectorization import process_and_store_tour_guides, create_schema, generate_embeddings
 import weaviate
+import numpy as np
 from weaviate.classes.init import Auth
+from pydantic import BaseModel
+from weaviate.collections.classes.filters import Filter
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -29,6 +32,18 @@ client = weaviate.connect_to_weaviate_cloud(
         cluster_url=weaviate_url,
         auth_credentials=Auth.api_key(weaviate_api_key),
     )
+
+# Define the matching request models
+class MatchingRequest(BaseModel):
+    student_id: str
+    gender: str
+    grade: str
+    residential_status: str = None
+    domestic_or_international: str = None
+    sports: str = None
+    extracurricular_activities: str = None
+    academic_interests: str = None
+    other_notes: str = None
 
 
 @router.post("/upload-tour-guides")
@@ -114,6 +129,113 @@ async def get_tour_guides():
     except Exception as e:
         logger.error(f"Error retrieving tour guides: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/match-tour-guides")
+async def match_tour_guides(request: MatchingRequest):
+    """Find the best matching tour guides based on the provided criteria."""
+    try:
+        logger.info(f"Received matching request: {request}")
+        
+        # Format text representation similar to how we do it for tour guides
+        text_fields = []
+        if request.residential_status:
+            text_fields.append(f"residential_status: {request.residential_status}")
+        if request.domestic_or_international:
+            text_fields.append(f"domestic_or_international: {request.domestic_or_international}")
+        if request.sports:
+            text_fields.append(f"sports: {request.sports}")
+        if request.extracurricular_activities:
+            text_fields.append(f"extracurricular_activities: {request.extracurricular_activities}")
+        if request.academic_interests:
+            text_fields.append(f"academic_interests: {request.academic_interests}")
+        if request.other_notes:
+            text_fields.append(f"other_notes: {request.other_notes}")
+        
+        text_representation = ", ".join(text_fields)
+        logger.info(f"Generated text representation: {text_representation}")
+        
+        # Generate embedding for the request text
+        embeddings = generate_embeddings([text_representation])
+        request_embedding = embeddings[0]
+        
+        # Get the TourGuide collection
+        tour_guide_collection = client.collections.get("TourGuide")
+        
+        # First filter by gender and grade
+        gender_first_char = request.gender[0].lower() if request.gender else ""
+        
+        # Using the proper filter object structure with the Weaviate filter builder
+        try:
+            # Get all guides first (without filtering) and then filter in memory
+            all_guides = tour_guide_collection.query.fetch_objects(
+                limit=1000  # Get a larger number of guides
+            )
+            
+            # Filter in memory
+            filtered_guides = []
+            if all_guides and hasattr(all_guides, 'objects'):
+                for obj in all_guides.objects:
+                    guide_gender = obj.properties.get("gender", "")
+                    guide_grade = obj.properties.get("grade", "")
+                    
+                    # Check if the gender starts with the same letter (case-insensitive)
+                    gender_match = guide_gender and guide_gender[0].lower() == gender_first_char
+                    # Check if the grade matches exactly
+                    grade_match = guide_grade == request.grade
+                    
+                    if gender_match and grade_match:
+                        filtered_guides.append(obj)
+            
+            # Check if we have results
+            matches = []
+            
+            if filtered_guides and len(filtered_guides) > 0:
+                # Calculate similarity scores manually
+                for obj in filtered_guides:
+                    guide_embedding = obj.properties.get("embedding", [])
+                    similarity = 0
+                    if guide_embedding and len(guide_embedding) > 0:
+                        # Normalize vectors
+                        a = np.array(request_embedding)
+                        b = np.array(guide_embedding)
+                        similarity = np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b))
+                    
+                    matches.append({
+                        "student_id": obj.properties.get("student_id", ""),
+                        "gender": obj.properties.get("gender", ""),
+                        "grade": obj.properties.get("grade", ""),
+                        "similarity_score": float(similarity),
+                        "id": obj.uuid
+                    })
+                
+                # Sort by similarity score (highest first) and take top 3
+                matches.sort(key=lambda x: x["similarity_score"], reverse=True)
+                top_matches = matches[:3]
+                
+                return {
+                    "status": "success",
+                    "message": f"Found {len(top_matches)} matching tour guides",
+                    "matches": top_matches
+                }
+            else:
+                # No matches found
+                return {
+                    "status": "warning",
+                    "message": "No matching tour guides found with the same gender and grade",
+                    "matches": []
+                }
+                
+        except Exception as query_error:
+            logger.error(f"Error querying Weaviate: {query_error}")
+            raise HTTPException(
+                status_code=500, 
+                detail=f"Error querying tour guides: {str(query_error)}"
+            )
+            
+    except Exception as e:
+        logger.error(f"Error matching tour guides: {e}")
+        raise HTTPException(status_code=500, detail=f"Error matching tour guides: {str(e)}")
+
 
 @router.get("/test-weaviate")
 async def test_weaviate_connection():
