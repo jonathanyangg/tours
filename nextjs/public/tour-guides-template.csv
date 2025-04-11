@@ -1,0 +1,6 @@
+id,gender,grade,name,specialties,experience_years,languages,rating
+TG001,Male,A,John Smith,Historical Tours,5,English,Spanish,4.8
+TG002,Female,B,Sarah Johnson,Adventure Tours,3,English,French,4.5
+TG003,Male,A,Michael Brown,Cultural Tours,7,English,German,Italian,4.9
+TG004,Female,A,Emily Davis,Food Tours,4,English,Japanese,4.7
+TG005,Male,B,David Wilson,Wildlife Tours,2,English,Portuguese,4.3 
