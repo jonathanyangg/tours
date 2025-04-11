@@ -96,7 +96,7 @@ async def get_tour_guides():
         
         # Using the newer API with proper method chain
         query_result = tour_guide_collection.query.fetch_objects(
-            limit=1000  # Set a reasonable limit
+            limit=10  # Set a reasonable limit
         )
         
         # Convert the response to a format that can be JSON serialized
@@ -107,7 +107,7 @@ async def get_tour_guides():
                     "student_id": obj.properties.get("student_id", ""),
                     "gender": obj.properties.get("gender", ""),
                     "grade": obj.properties.get("grade", ""),
-                    "text_representation": obj.properties.get("text_representation", "")
+                    "embedding": obj.properties.get("embedding", "")
                 })
         
         return guides

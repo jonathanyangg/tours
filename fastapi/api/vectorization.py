@@ -4,7 +4,7 @@ from typing import List, Dict
 import logging
 import os
 from dotenv import load_dotenv
-import openai
+from openai import OpenAI
 
 import weaviate
 import weaviate.classes as wvc  # Use the classes module as per the docs
@@ -14,8 +14,8 @@ from weaviate.auth import AuthApiKey
 # Load environment variables
 load_dotenv()
 
-# Configure OpenAI (if needed later)
-openai.api_key = os.environ.get("OPENAI_API_KEY")
+# Configure OpenAI client with the new API structure
+client_openai = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -30,6 +30,10 @@ client = weaviate.connect_to_weaviate_cloud(
         auth_credentials=Auth.api_key(weaviate_api_key),
     )
 
+# Configuration constants
+BATCH_SIZE = 100
+EMBEDDING_MODEL = "text-embedding-ada-002"  # or your preferred model
+
 def create_schema():
     """Create the Weaviate schema for tour guides if it doesn't exist."""
     try:
@@ -42,7 +46,7 @@ def create_schema():
                 wvc.config.Property(name="student_id", data_type=wvc.config.DataType.TEXT),
                 wvc.config.Property(name="gender", data_type=wvc.config.DataType.TEXT),
                 wvc.config.Property(name="grade", data_type=wvc.config.DataType.TEXT),
-                wvc.config.Property(name="text_representation", data_type=wvc.config.DataType.TEXT),
+                # Removed text_representation from schema
                 # Using the proper DataType for vector embeddings
                 wvc.config.Property(name="embedding", data_type=wvc.config.DataType.NUMBER_ARRAY),
             ]
@@ -68,6 +72,56 @@ def format_dataframe_columns(df: pd.DataFrame, start_pos: int = 3) -> pd.DataFra
     )
     return df
 
+def generate_embeddings(texts: List[str], batch_size: int = BATCH_SIZE) -> List[List[float]]:
+    """Generate embeddings for a list of texts using OpenAI's API in batches.
+    
+    Args:
+        texts: List of text strings to get embeddings for
+        batch_size: Number of texts to process in each API call
+        
+    Returns:
+        List of embedding vectors
+    """
+    all_embeddings = []
+    
+    for i in range(0, len(texts), batch_size):
+        batch = texts[i:i+batch_size]
+        try:
+            # Clean and validate the batch
+            cleaned_batch = []
+            for text in batch:
+                # Handle None/null values
+                if pd.isna(text):
+                    text = ""
+                
+                # Convert to string and clean
+                text = str(text).strip()
+                
+                # Ensure non-empty string
+                if not text:
+                    text = "no information provided"
+                
+                cleaned_batch.append(text)
+            
+            logger.info(f"Processing batch {i//batch_size + 1} of {(len(texts)-1)//batch_size + 1}")
+            logger.info(f"Sample text from batch: {cleaned_batch[0][:100]}...")
+            
+            # Use the new OpenAI client API structure
+            response = client_openai.embeddings.create(
+                model=EMBEDDING_MODEL,
+                input=cleaned_batch,
+                encoding_format="float"
+            )
+            batch_embeddings = [data.embedding for data in response.data]
+            all_embeddings.extend(batch_embeddings)
+            
+        except Exception as e:
+            logger.error(f"Error in batch {i//batch_size + 1}: {e}")
+            logger.error(f"Problematic batch content: {batch}")
+            raise
+    
+    return all_embeddings
+
 def process_and_store_tour_guides(df: pd.DataFrame) -> Dict:
     """
     Process tour guide data and store it in Weaviate.
@@ -75,7 +129,7 @@ def process_and_store_tour_guides(df: pd.DataFrame) -> Dict:
     This includes:
       - Creating (or recreating) the schema.
       - Formatting a text representation of each row.
-      - (Temporarily) bypassing vectorization by using a dummy embedding vector.
+      - Generating vector embeddings for the text representations.
       - Inserting objects with the v4 API.
     """
     try:
@@ -96,10 +150,10 @@ def process_and_store_tour_guides(df: pd.DataFrame) -> Dict:
         # Format the text representation
         df = format_dataframe_columns(df)
         
-        # Bypass vectorization for testing: use dummy embeddings
-        logger.info("Bypassing vectorization; using dummy embeddings.")
-        dummy_embedding = [0.0, 0.0, 0.0]  # Adjust dimensions as needed for your eventual embeddings
-        embeddings = [dummy_embedding for _ in range(len(df))]
+        # Generate embeddings for the text representations
+        logger.info("Generating embeddings for text representations...")
+        embeddings = generate_embeddings(df['text_representation'].tolist())
+        logger.info(f"Generated {len(embeddings)} embeddings of dimension {len(embeddings[0])}")
         
         # Insert each tour guide object into Weaviate using the collections API (v4)
         logger.info("Inserting tour guide data into Weaviate...")
@@ -111,7 +165,7 @@ def process_and_store_tour_guides(df: pd.DataFrame) -> Dict:
                 "student_id": str(row.iloc[0]),  # Assumes the first column is a unique identifier
                 "gender": str(row.iloc[1]),
                 "grade": str(row.iloc[2]),
-                "text_representation": row['text_representation'],
+                # No longer storing text_representation
                 "embedding": embeddings[idx]
             }
             response = tour_guide_collection.data.insert(
