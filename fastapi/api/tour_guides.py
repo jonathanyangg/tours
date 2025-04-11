@@ -121,7 +121,8 @@ async def get_tour_guides():
                 students.append({
                     "student_id": obj.properties.get("student_id", ""),
                     "gender": obj.properties.get("gender", ""),
-                    "grade": obj.properties.get("grade", "")
+                    "grade": obj.properties.get("grade", ""),
+                    "embedding": obj.properties.get("embedding", [])[:10]
                 })
         
         return students
@@ -251,4 +252,4 @@ async def test_weaviate_connection():
         return {
             "status": "error", 
             "message": f"Weaviate connection failed: {str(e)}"
-        } 
+        }
