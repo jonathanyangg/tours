@@ -104,30 +104,29 @@ async def upload_tour_guides(file: UploadFile = File(...)):
 
 @router.get("/tour-guides")
 async def get_tour_guides():
-    """Retrieve all tour guides from Weaviate."""
+    """Retrieve student information from Weaviate."""
     try:
         # Get the collection
         tour_guide_collection = client.collections.get("TourGuide")
         
         # Using the newer API with proper method chain
         query_result = tour_guide_collection.query.fetch_objects(
-            limit=10  # Set a reasonable limit
+            limit=50  # Set limit to 50 records
         )
         
         # Convert the response to a format that can be JSON serialized
-        guides = []
+        students = []
         if query_result and hasattr(query_result, 'objects'):
             for obj in query_result.objects:
-                guides.append({
+                students.append({
                     "student_id": obj.properties.get("student_id", ""),
                     "gender": obj.properties.get("gender", ""),
-                    "grade": obj.properties.get("grade", ""),
-                    "embedding": obj.properties.get("embedding", "")
+                    "grade": obj.properties.get("grade", "")
                 })
         
-        return guides
+        return students
     except Exception as e:
-        logger.error(f"Error retrieving tour guides: {e}")
+        logger.error(f"Error retrieving student information: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/match-tour-guides")
