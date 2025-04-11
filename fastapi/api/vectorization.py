@@ -1,62 +1,66 @@
 import pandas as pd
 import numpy as np
-from sentence_transformers import SentenceTransformer
-import weaviate
 from typing import List, Dict
 import logging
 import os
 from dotenv import load_dotenv
 import openai
 
+import weaviate
+import weaviate.classes as wvc  # Use the classes module as per the docs
+from weaviate.classes.init import Auth
+from weaviate.auth import AuthApiKey
+
 # Load environment variables
 load_dotenv()
 
-# Configure OpenAI
+# Configure OpenAI (if needed later)
 openai.api_key = os.environ.get("OPENAI_API_KEY")
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Initialize the embedding model
-model = SentenceTransformer('all-MiniLM-L6-v2')
-
 # Initialize Weaviate client
-client = weaviate.Client(
-    url="http://localhost:8080",  # Update this with your Weaviate instance URL
-)
+weaviate_url = os.environ["WEAVIATE_URL"]
+weaviate_api_key = os.environ["WEAVIATE_API_KEY"]
+
+client = weaviate.connect_to_weaviate_cloud(
+        cluster_url=weaviate_url,
+        auth_credentials=Auth.api_key(weaviate_api_key),
+    )
 
 def create_schema():
     """Create the Weaviate schema for tour guides if it doesn't exist."""
-    schema = {
-        "class": "TourGuide",
-        "description": "A tour guide with their information and vector embedding",
-        "properties": [
-            {"name": "id", "dataType": ["text"]},
-            {"name": "gender", "dataType": ["text"]},
-            {"name": "grade", "dataType": ["text"]},
-            {"name": "text_representation", "dataType": ["text"]},
-            {"name": "embedding", "dataType": ["number[]"]},
-        ],
-        "vectorizer": "none",  # We'll provide our own embeddings
-    }
-    
     try:
-        client.schema.create_class(schema)
-        logger.info("Created TourGuide schema in Weaviate")
-    except weaviate.exceptions.UnexpectedStatusCodeException:
-        logger.info("TourGuide schema already exists")
+        # List existing collections (schemas)
+        existing_collections = client.collections.list_all()
+        logger.info(f"Existing collections: {existing_collections}")
+        
+        if "TourGuide" not in existing_collections:
+            properties = [
+                wvc.config.Property(name="student_id", data_type=wvc.config.DataType.TEXT),
+                wvc.config.Property(name="gender", data_type=wvc.config.DataType.TEXT),
+                wvc.config.Property(name="grade", data_type=wvc.config.DataType.TEXT),
+                wvc.config.Property(name="text_representation", data_type=wvc.config.DataType.TEXT),
+                # Using the proper DataType for vector embeddings
+                wvc.config.Property(name="embedding", data_type=wvc.config.DataType.NUMBER_ARRAY),
+            ]
+            client.collections.create(
+                name="TourGuide",
+                description="A tour guide with their information and vector embedding",
+                properties=properties,
+                vectorizer_config=wvc.config.Configure.Vectorizer.none(),  # Using our own embeddings
+            )
+            logger.info("Created TourGuide schema in Weaviate")
+        else:
+            logger.info("TourGuide schema already exists")
+    except Exception as e:
+        logger.error(f"Error creating schema: {e}")
+        raise
 
 def format_dataframe_columns(df: pd.DataFrame, start_pos: int = 3) -> pd.DataFrame:
-    """Merge columns from start_pos to the end into a single text column.
-    
-    Args:
-        df: DataFrame to process
-        start_pos: Starting column position (0-indexed) for columns to merge
-        
-    Returns:
-        DataFrame with added 'text_representation' column
-    """
+    """Concatenate columns (from start_pos onward) into a text representation."""
     columns_to_merge = df.columns[start_pos:]
     df['text_representation'] = df.apply(
         lambda row: ', '.join([f"{col}: {row[col]}" for col in columns_to_merge if pd.notna(row[col])]),
@@ -64,100 +68,69 @@ def format_dataframe_columns(df: pd.DataFrame, start_pos: int = 3) -> pd.DataFra
     )
     return df
 
-def generate_embeddings(texts: List[str], batch_size: int = 20) -> List[List[float]]:
-    """Generate embeddings for a list of texts using OpenAI's ada-002 model.
-    
-    Args:
-        texts: List of text strings to get embeddings for
-        batch_size: Number of texts to process in each batch
-        
-    Returns:
-        List of embedding vectors
-    """
-    all_embeddings = []
-    
-    for i in range(0, len(texts), batch_size):
-        batch = texts[i:i+batch_size]
-        try:
-            # Clean and validate the batch
-            cleaned_batch = []
-            for text in batch:
-                if pd.isna(text):
-                    text = ""
-                text = str(text).strip()
-                if not text:
-                    text = "no information provided"
-                cleaned_batch.append(text)
-            
-            logger.info(f"Processing batch {i//batch_size + 1} of {len(texts)//batch_size + 1}")
-            
-            # Generate embeddings using OpenAI's ada-002 model
-            response = openai.Embedding.create(
-                input=cleaned_batch,
-                model="text-embedding-ada-002"
-            )
-            batch_embeddings = [data.embedding for data in response.data]
-            all_embeddings.extend(batch_embeddings)
-            
-        except Exception as e:
-            logger.error(f"Error in batch {i//batch_size + 1}: {e}")
-            raise
-    
-    return all_embeddings
-
 def process_and_store_tour_guides(df: pd.DataFrame) -> Dict:
-    """Process tour guide data and store in Weaviate.
+    """
+    Process tour guide data and store it in Weaviate.
     
-    Args:
-        df: DataFrame containing tour guide information
-        
-    Returns:
-        Dictionary with processing statistics
+    This includes:
+      - Creating (or recreating) the schema.
+      - Formatting a text representation of each row.
+      - (Temporarily) bypassing vectorization by using a dummy embedding vector.
+      - Inserting objects with the v4 API.
     """
     try:
-        # Create schema if it doesn't exist
+        # Create or verify the schema first
         create_schema()
-        
-        # Clear existing data
-        logger.info("Clearing existing tour guide data...")
+
+        # (Optional) Clear existing data: delete the TourGuide collection if it exists
         try:
-            client.schema.delete_class("TourGuide")
-            logger.info("Deleted existing TourGuide class")
+            if "TourGuide" in client.collections.list_all():
+                client.collections.delete("TourGuide")
+                logger.info("Deleted existing TourGuide collection")
         except Exception as e:
-            logger.warning(f"Could not delete existing TourGuide class: {e}")
-        
-        # Recreate the schema
+            logger.warning(f"Could not delete existing TourGuide collection: {e}")
+
+        # Recreate the schema after deletion for a clean slate
         create_schema()
-        
+
         # Format the text representation
         df = format_dataframe_columns(df)
         
-        # Generate embeddings
-        logger.info("Generating embeddings for tour guides...")
-        embeddings = generate_embeddings(df['text_representation'].tolist())
+        # Bypass vectorization for testing: use dummy embeddings
+        logger.info("Bypassing vectorization; using dummy embeddings.")
+        dummy_embedding = [0.0, 0.0, 0.0]  # Adjust dimensions as needed for your eventual embeddings
+        embeddings = [dummy_embedding for _ in range(len(df))]
         
-        # Store in Weaviate
-        logger.info("Storing tour guides in Weaviate...")
+        # Insert each tour guide object into Weaviate using the collections API (v4)
+        logger.info("Inserting tour guide data into Weaviate...")
+        count = 0
+        tour_guide_collection = client.collections.get("TourGuide")
+        
         for idx, row in df.iterrows():
             data_object = {
-                "id": str(row.iloc[0]),  # First column
-                "gender": str(row.iloc[1]),  # Second column
-                "grade": str(row.iloc[2]),  # Third column
+                "student_id": str(row.iloc[0]),  # Assumes the first column is a unique identifier
+                "gender": str(row.iloc[1]),
+                "grade": str(row.iloc[2]),
                 "text_representation": row['text_representation'],
                 "embedding": embeddings[idx]
             }
-            
-            client.data_object.create(
-                data_object=data_object,
-                class_name="TourGuide"
+            response = tour_guide_collection.data.insert(
+                properties=data_object
             )
-        
+            logger.info(f"Inserted object {row.iloc[0]} with response: {response}")
+            count += 1
+
+        logger.info(f"Successfully inserted {count} tour guides into Weaviate.")
         return {
             "status": "success",
-            "message": f"Successfully processed and stored {len(df)} tour guides",
-            "count": len(df)
+            "message": f"Successfully processed and stored {count} tour guides",
+            "count": count
         }
         
     except Exception as e:
-        logger.error(f"Error processing tour guides: {e}")
-        raise 
+        logger.error(f"Unexpected error: {e}")
+        raise
+
+# For testing: Uncomment and adjust the following lines as needed.
+# df = pd.read_csv("tourguides_final.csv")
+# process_and_store_tour_guides(df)

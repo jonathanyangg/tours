@@ -66,4 +66,23 @@ export async function checkHealth() {
     console.error('Error checking backend health:', error);
     throw error;
   }
+}
+
+/**
+ * Test the Weaviate connection
+ * @returns The test result
+ */
+export async function testWeaviateConnection() {
+  try {
+    const response = await fetch(`${API_BASE_URL}/test-weaviate`);
+
+    if (!response.ok) {
+      throw new Error('Weaviate connection test failed');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error testing Weaviate connection:', error);
+    throw error;
+  }
 } 
