@@ -89,10 +89,10 @@ export default function FileUpload({ onUploadSuccess, onUploadError }: FileUploa
   return (
     <div className="w-full">
       <div 
-        className={`flex flex-col items-center justify-center p-8 border-2 border-dashed rounded-lg ${
+        className={`flex flex-col items-center justify-center p-8 border-2 border-dashed rounded-lg shadow-md ${
           isDragging 
-            ? 'border-blue-500 bg-blue-50' 
-            : 'border-gray-600 bg-gray-700'
+            ? 'border-primary bg-primary/10' 
+            : 'border-base-300 bg-base-100'
         }`}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
@@ -101,7 +101,7 @@ export default function FileUpload({ onUploadSuccess, onUploadError }: FileUploa
       >
         <svg 
           xmlns="http://www.w3.org/2000/svg" 
-          className={`h-12 w-12 mb-4 ${isDragging ? 'text-blue-500' : 'text-gray-400'}`} 
+          className={`h-12 w-12 mb-4 ${isDragging ? 'text-primary' : 'text-base-content/50'}`} 
           fill="none" 
           viewBox="0 0 24 24" 
           stroke="currentColor"
@@ -116,18 +116,18 @@ export default function FileUpload({ onUploadSuccess, onUploadError }: FileUploa
         
         {isUploading ? (
           <div className="w-full max-w-xs">
-            <div className="mb-2 text-center text-gray-300 font-light">
+            <div className="mb-2 text-center text-base-content/80 font-normal">
               Uploading... {uploadProgress}%
             </div>
-            <div className="w-full bg-gray-600 rounded-full h-2.5">
+            <div className="w-full bg-base-300 rounded-full h-2.5">
               <div 
-                className="bg-blue-500 h-2.5 rounded-full" 
+                className="bg-primary h-2.5 rounded-full" 
                 style={{ width: `${uploadProgress}%` }}
               ></div>
             </div>
           </div>
         ) : (
-          <p className="mb-4 text-center text-gray-300 font-light">
+          <p className="mb-4 text-center text-base-content/80 font-normal">
             Drag and drop your CSV file here or click to browse
           </p>
         )}
@@ -135,14 +135,14 @@ export default function FileUpload({ onUploadSuccess, onUploadError }: FileUploa
         <input 
           type="file" 
           accept=".csv" 
-          className="hidden" 
+          className="hidden focus:outline-none" 
           ref={fileInputRef}
           onChange={handleFileChange}
         />
       </div>
       
       {error && (
-        <div className="mt-4 p-3 bg-red-900 text-red-200 rounded-md">
+        <div className="mt-4 p-3 bg-error/20 text-error-content rounded-md">
           {error}
         </div>
       )}

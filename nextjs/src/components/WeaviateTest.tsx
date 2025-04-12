@@ -23,31 +23,27 @@ export default function WeaviateTest() {
   };
 
   return (
-    <div className="p-4 border rounded-lg bg-gray-800">
-      <h2 className="text-xl font-semibold mb-4 text-white">Weaviate Connection Test</h2>
+    <div className="p-4 border rounded-lg bg-base-200 border-base-300">
+      <h2 className="text-xl font-semibold mb-4 text-base-content">Weaviate Connection Test</h2>
       
       <button
         onClick={handleTest}
         disabled={loading}
-        className={`px-4 py-2 rounded ${
-          loading 
-            ? 'bg-gray-600 cursor-not-allowed' 
-            : 'bg-blue-600 hover:bg-blue-700'
-        } text-white`}
+        className={`btn ${loading ? 'btn-disabled' : 'btn-primary'}`}
       >
         {loading ? 'Testing...' : 'Test Connection'}
       </button>
       
       {error && (
-        <div className="mt-4 p-3 bg-red-900 text-red-200 rounded-md">
+        <div className="mt-4 p-3 bg-error/20 text-error-content rounded-md">
           {error}
         </div>
       )}
       
       {result && (
         <div className="mt-4">
-          <h3 className="text-lg font-medium text-white mb-2">Result:</h3>
-          <pre className="bg-gray-900 p-3 rounded overflow-auto max-h-60 text-sm text-gray-300">
+          <h3 className="text-lg font-medium text-base-content mb-2">Result:</h3>
+          <pre className="bg-base-300 p-3 rounded overflow-auto max-h-60 text-sm text-base-content/70">
             {JSON.stringify(result, null, 2)}
           </pre>
         </div>

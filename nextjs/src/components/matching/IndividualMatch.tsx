@@ -8,11 +8,11 @@ type MatchingFormData = {
   gender: string;
   grade: string;
   residential_status: string;
-  domestic_or_international: string;
+  city_country: string;
   sports: string;
   extracurricular_activities: string;
   academic_interests: string;
-  other_notes: string;
+  additional_information: string;
 };
 
 type MatchResult = {
@@ -29,11 +29,11 @@ export default function IndividualMatch() {
     gender: '',
     grade: '',
     residential_status: '',
-    domestic_or_international: '',
+    city_country: '',
     sports: '',
     extracurricular_activities: '',
     academic_interests: '',
-    other_notes: ''
+    additional_information: ''
   });
   
   const [matches, setMatches] = useState<MatchResult[]>([]);
@@ -92,16 +92,16 @@ export default function IndividualMatch() {
   };
 
   return (
-    <div className="bg-gray-800 rounded-lg shadow-sm border border-gray-700 mb-8">
+    <div className="card bg-base-200 shadow-md border border-base-300 mb-8">
       <div className="p-6">
-        <h2 className="text-xl font-light text-gray-200 mb-2">Individual Student Matching</h2>
-        <p className="text-sm text-gray-400 mb-6">Enter student information manually to find the best tour guide match.</p>
+        <h2 className="text-xl font-normal text-base-content mb-2">Individual Student Matching</h2>
+        <p className="text-sm text-base-content/70 mb-6">Enter student information manually to find the best tour guide match.</p>
         
         <form onSubmit={handleSubmit}>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-6">
             <div className="form-control">
               <label className="label mb-2">
-                <span className="label-text text-gray-300 font-light">Student ID</span>
+                <span className="label-text text-base-content/80 font-normal">Student ID</span>
               </label>
               <input 
                 type="text" 
@@ -109,16 +109,16 @@ export default function IndividualMatch() {
                 value={formData.student_id}
                 onChange={handleChange}
                 placeholder="Enter student ID" 
-                className="input input-bordered bg-gray-700 border-gray-600 focus:border-gray-500 text-gray-200 placeholder:text-gray-400 w-full" 
+                className="input input-bordered bg-base-100 border-base-300 text-base-content placeholder:text-base-content/50 w-full" 
               />
             </div>
             
             <div className="form-control">
               <label className="label mb-2">
-                <span className="label-text text-gray-300 font-light">Gender</span>
+                <span className="label-text text-base-content/80 font-normal">Gender</span>
               </label>
               <select 
-                className="select select-bordered bg-gray-700 border-gray-600 focus:border-gray-500 text-gray-200 w-full"
+                className="select select-bordered bg-base-100 border-base-300 text-base-content w-full"
                 name="gender"
                 value={formData.gender}
                 onChange={handleChange}
@@ -131,10 +131,10 @@ export default function IndividualMatch() {
             
             <div className="form-control">
               <label className="label mb-2">
-                <span className="label-text text-gray-300 font-light">Application Grade</span>
+                <span className="label-text text-base-content/80 font-normal">Application Grade</span>
               </label>
               <select 
-                className="select select-bordered bg-gray-700 border-gray-600 focus:border-gray-500 text-gray-200 w-full"
+                className="select select-bordered bg-base-100 border-base-300 text-base-content w-full"
                 name="grade"
                 value={formData.grade}
                 onChange={handleChange}
@@ -149,44 +149,42 @@ export default function IndividualMatch() {
             
             <div className="form-control">
               <label className="label mb-2">
-                <span className="label-text text-gray-300 font-light">Residential Status</span>
+                <span className="label-text text-base-content/80 font-normal">Residential Status</span>
               </label>
               <select 
-                className="select select-bordered bg-gray-700 border-gray-600 focus:border-gray-500 text-gray-200 w-full"
+                className="select select-bordered bg-base-100 border-base-300 text-base-content w-full"
                 name="residential_status"
                 value={formData.residential_status}
                 onChange={handleChange}
               >
                 <option value="" disabled>Select status</option>
-                <option value="Boarder">Boarder</option>
+                <option value="Boarding">Boarding</option>
                 <option value="Day Student">Day Student</option>
               </select>
             </div>
             
             <div className="form-control">
               <label className="label mb-2">
-                <span className="label-text text-gray-300 font-light">Domestic or International</span>
+                <span className="label-text text-base-content/80 font-normal">City/Country</span>
               </label>
-              <select 
-                className="select select-bordered bg-gray-700 border-gray-600 focus:border-gray-500 text-gray-200 w-full"
-                name="domestic_or_international"
-                value={formData.domestic_or_international}
+              <input 
+                type="text" 
+                placeholder="Enter city and country..." 
+                className="input input-bordered bg-base-100 border-base-300 text-base-content w-full"
+                name="city_country"
+                value={formData.city_country}
                 onChange={handleChange}
-              >
-                <option value="" disabled>Select status</option>
-                <option value="Domestic">Domestic</option>
-                <option value="International">International</option>
-              </select>
+              />
             </div>
             
             <div className="form-control">
               <label className="label mb-2">
-                <span className="label-text text-gray-300 font-light">Sports</span>
+                <span className="label-text text-base-content/80 font-normal">Sports</span>
               </label>
               <input 
                 type="text" 
                 placeholder="Enter sports interests..." 
-                className="input input-bordered bg-gray-700 border-gray-600 focus:border-gray-500 text-gray-200 w-full"
+                className="input input-bordered bg-base-100 border-base-300 text-base-content w-full"
                 name="sports"
                 value={formData.sports}
                 onChange={handleChange}
@@ -195,12 +193,12 @@ export default function IndividualMatch() {
             
             <div className="form-control">
               <label className="label mb-2">
-                <span className="label-text text-gray-300 font-light">Extracurricular Activities</span>
+                <span className="label-text text-base-content/80 font-normal">Extracurricular Activities</span>
               </label>
               <input 
                 type="text" 
                 placeholder="Enter extracurricular activities..." 
-                className="input input-bordered bg-gray-700 border-gray-600 focus:border-gray-500 text-gray-200 w-full max-w-full truncate"
+                className="input input-bordered bg-base-100 border-base-300 text-base-content w-full max-w-full truncate"
                 maxLength={50}
                 name="extracurricular_activities"
                 value={formData.extracurricular_activities}
@@ -210,12 +208,12 @@ export default function IndividualMatch() {
             
             <div className="form-control">
               <label className="label mb-2">
-                <span className="label-text text-gray-300 font-light">Academic Interests</span>
+                <span className="label-text text-base-content/80 font-normal">Academic Interests</span>
               </label>
               <input 
                 type="text" 
                 placeholder="Enter academic interests..." 
-                className="input input-bordered bg-gray-700 border-gray-600 focus:border-gray-500 text-gray-200 w-full"
+                className="input input-bordered bg-base-100 border-base-300 text-base-content w-full"
                 name="academic_interests"
                 value={formData.academic_interests}
                 onChange={handleChange}
@@ -224,14 +222,14 @@ export default function IndividualMatch() {
             
             <div className="form-control">
               <label className="label mb-2">
-                <span className="label-text text-gray-300 font-light">Other Notes</span>
+                <span className="label-text text-base-content/80 font-normal">Additional Information</span>
               </label>
               <input 
                 type="text" 
-                placeholder="Enter any additional notes..." 
-                className="input input-bordered bg-gray-700 border-gray-600 focus:border-gray-500 text-gray-200 w-full"
-                name="other_notes"
-                value={formData.other_notes}
+                placeholder="Enter any additional information..." 
+                className="input input-bordered bg-base-100 border-base-300 text-base-content w-full"
+                name="additional_information"
+                value={formData.additional_information}
                 onChange={handleChange}
               />
             </div>
@@ -240,7 +238,7 @@ export default function IndividualMatch() {
           <div className="flex justify-end mt-8">
             <button 
               type="submit" 
-              className={`btn ${isLoading ? 'loading bg-gray-500' : 'bg-gray-600'} text-white hover:bg-gray-500 border-none`}
+              className={`btn ${isLoading ? 'loading' : ''} btn-primary`}
               disabled={isLoading}
             >
               {isLoading ? 'Finding Matches...' : 'Find Match'}
@@ -251,14 +249,14 @@ export default function IndividualMatch() {
         {/* Results section */}
         {status && (
           <div className={`mt-8 p-4 rounded-lg ${
-            status === 'success' ? 'bg-green-900/30 border border-green-700' : 
-            status === 'warning' ? 'bg-yellow-900/30 border border-yellow-700' : 
-            'bg-red-900/30 border border-red-700'
+            status === 'success' ? 'bg-success/20 border border-success' : 
+            status === 'warning' ? 'bg-warning/20 border border-warning' : 
+            'bg-error/20 border border-error'
           }`}>
             <p className={`font-medium ${
-              status === 'success' ? 'text-green-400' : 
-              status === 'warning' ? 'text-yellow-400' : 
-              'text-red-400'
+              status === 'success' ? 'text-success-content' : 
+              status === 'warning' ? 'text-warning-content' : 
+              'text-error-content'
             }`}>
               {message}
             </p>
@@ -267,20 +265,20 @@ export default function IndividualMatch() {
 
         {matches.length > 0 && (
           <div className="mt-8">
-            <h3 className="text-lg font-medium text-gray-300 mb-4">Top Matches</h3>
+            <h3 className="text-lg font-medium text-base-content mb-4">Top Matches</h3>
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
               {matches.map((match, index) => (
-                <div key={match.id} className="bg-gray-700 rounded-lg p-5 border border-gray-600">
+                <div key={match.id} className="card bg-base-100 rounded-lg p-5 border border-base-300">
                   <div className="flex justify-between items-center mb-3">
-                    <span className="text-lg font-medium text-gray-200">Match #{index + 1}</span>
-                    <span className="px-2 py-1 bg-gray-600 rounded text-gray-200 text-sm">
+                    <span className="text-lg font-medium text-base-content">Match #{index + 1}</span>
+                    <span className="badge badge-primary">
                       {formatSimilarity(match.similarity_score)}
                     </span>
                   </div>
                   <div className="space-y-2">
-                    <p className="text-gray-300"><span className="text-gray-400">Student ID:</span> {match.student_id}</p>
-                    <p className="text-gray-300"><span className="text-gray-400">Gender:</span> {match.gender}</p>
-                    <p className="text-gray-300"><span className="text-gray-400">Grade:</span> {match.grade}</p>
+                    <p className="text-base-content"><span className="text-base-content/70">Student ID:</span> {match.student_id}</p>
+                    <p className="text-base-content"><span className="text-base-content/70">Gender:</span> {match.gender}</p>
+                    <p className="text-base-content"><span className="text-base-content/70">Grade:</span> {match.grade}</p>
                   </div>
                 </div>
               ))}

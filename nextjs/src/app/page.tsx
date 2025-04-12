@@ -4,10 +4,11 @@ import DatabaseMatches from '@/components/matching/DatabaseMatches';
 import BulkMatch from '@/components/matching/BulkMatch';
 import IndividualMatch from '@/components/matching/IndividualMatch';
 import RecentMatches from '@/components/matching/RecentMatches';
+import Footer from '@/components/footer/footer';
 
 export default function Home() {
   return (
-    <div className="flex-1 bg-gray-900 flex flex-col min-h-screen">
+    <div className="flex-1 bg-base-300 flex flex-col min-h-screen">
       <Navbar />
       
       {/* Main Content */}
@@ -15,8 +16,8 @@ export default function Home() {
         <Hero />
         <DatabaseMatches />
         <IndividualMatch />
-        <BulkMatch />
         <RecentMatches />
+        <Footer />
       </main>
     </div>
   );
