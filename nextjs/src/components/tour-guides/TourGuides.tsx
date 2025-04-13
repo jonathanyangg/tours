@@ -55,6 +55,9 @@ export default function TourGuides() {
                     Student ID
                   </th>
                   <th className="text-base-content font-medium text-xs uppercase tracking-wider">
+                    Residential Status
+                  </th>
+                  <th className="text-base-content font-medium text-xs uppercase tracking-wider">
                     Gender
                   </th>
                   <th className="text-base-content font-medium text-xs uppercase tracking-wider">
@@ -65,8 +68,11 @@ export default function TourGuides() {
               <tbody>
                 {students.map((student, index) => (
                   <tr key={index} className="hover:bg-base-300">
-                    <td className="text-base-content/80">
+                    <td className="text-base-content/90">
                       {student.student_id}
+                    </td>
+                    <td className="text-base-content/80">
+                      {student.residential_status}
                     </td>
                     <td className="text-base-content/80">
                       {student.gender}

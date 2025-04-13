@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { matchTourGuides } from '@/services/api';
+import React from 'react';
 
 type MatchingFormData = {
   student_id: string;
@@ -13,6 +14,8 @@ type MatchingFormData = {
   extracurricular_activities: string;
   academic_interests: string;
   additional_information: string;
+  race: string;
+  time_period: string;
 };
 
 type MatchResult = {
@@ -27,13 +30,15 @@ export default function IndividualMatch() {
   const [formData, setFormData] = useState<MatchingFormData>({
     student_id: '',
     gender: '',
-    grade: '',
-    residential_status: '',
+    grade: '9',
+    residential_status: 'Boarding',
     city_country: '',
     sports: '',
     extracurricular_activities: '',
     academic_interests: '',
-    additional_information: ''
+    additional_information: '',
+    race: '',
+    time_period: ''
   });
   
   const [matches, setMatches] = useState<MatchResult[]>([]);
@@ -111,6 +116,27 @@ export default function IndividualMatch() {
                 placeholder="Enter student ID" 
                 className="input input-bordered bg-base-100 border-base-300 text-base-content placeholder:text-base-content/50 w-full" 
               />
+            </div>
+
+            <div className="form-control">
+              <label className="label mb-2">
+                <span className="label-text text-base-content/80 font-normal">Time Period</span>
+              </label>
+              <select 
+                className="select select-bordered bg-base-100 border-base-300 text-base-content w-full"
+                name="time_period"
+                value={formData.time_period}
+                onChange={handleChange}
+              >
+                <option value="" disabled>Select time period</option>
+                <option value="Consult">Consult</option>
+                <option value="A">A</option>
+                <option value="B">B</option>
+                <option value="C">C</option>
+                <option value="D">D</option>
+                <option value="E">E</option>
+                <option value="F">F</option>
+              </select>
             </div>
             
             <div className="form-control">
@@ -230,6 +256,20 @@ export default function IndividualMatch() {
                 className="input input-bordered bg-base-100 border-base-300 text-base-content w-full"
                 name="additional_information"
                 value={formData.additional_information}
+                onChange={handleChange}
+              />
+            </div>
+            
+            <div className="form-control">
+              <label className="label mb-2">
+                <span className="label-text text-base-content/80 font-normal">Race</span>
+              </label>
+              <input 
+                type="text" 
+                placeholder="Enter race..." 
+                className="input input-bordered bg-base-100 border-base-300 text-base-content w-full"
+                name="race"
+                value={formData.race}
                 onChange={handleChange}
               />
             </div>

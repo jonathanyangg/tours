@@ -59,11 +59,13 @@ export async function matchTourGuides(matchData: {
   gender: string;
   grade: string;
   residential_status?: string;
-  domestic_or_international?: string;
+  city_country?: string;
   sports?: string;
   extracurricular_activities?: string;
   academic_interests?: string;
-  other_notes?: string;
+  additional_information?: string;
+  race?: string;
+  time_period?: string;
 }) {
   try {
     const response = await fetch(`${API_BASE_URL}/match-tour-guides`, {

@@ -30,10 +30,10 @@ export default function UploadData() {
         />
         
         {uploadResult && (
-          <div className="mt-6 p-4 bg-success/20 text-success-content rounded-md">
+          <div className="mt-6 p-4 bg-success/20 text-success rounded-md">
             <h3 className="font-medium mb-2">Upload Successful!</h3>
             <p>Your tour guide data has been successfully processed and stored in the database.</p>
-            <pre className="mt-2 p-2 bg-base-300 rounded text-xs overflow-auto">
+            <pre className="mt-2 p-2 bg-base-200 rounded text-xs overflow-auto">
               {JSON.stringify(uploadResult, null, 2)}
             </pre>
           </div>
