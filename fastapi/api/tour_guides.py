@@ -44,6 +44,8 @@ class MatchingRequest(BaseModel):
     extracurricular_activities: str = None
     academic_interests: str = None
     additional_information: str = None
+    race: str = None
+    time_period: str = None
 
 
 @router.post("/upload-tour-guides")
@@ -73,6 +75,41 @@ async def upload_tour_guides(file: UploadFile = File(...)):
         logger.info(f"Successfully created DataFrame with shape: {df.shape}")
         logger.info(f"DataFrame columns: {df.columns.tolist()}")
         logger.info(f"First few rows of data:\n{df.head().to_string()}")
+        
+        # Validate and transform the grade column
+        grade_column = df.columns[2]  # Get the third column name
+        logger.info(f"Processing grade column: {grade_column}")
+        
+        # Function to validate and transform grade values
+        def transform_grade(grade):
+            if pd.isna(grade):
+                raise ValueError("Grade cannot be empty")
+            
+            # Convert to string and strip whitespace
+            grade_str = str(grade).strip().upper()
+            
+            # Handle "PG" case
+            if grade_str == "PG":
+                return 12
+            
+            try:
+                # Try to convert to integer
+                grade_num = int(grade_str)
+                if grade_num < 1 or grade_num > 12:
+                    raise ValueError(f"Grade must be between 1 and 12, got {grade_num}")
+                return grade_num
+            except ValueError as e:
+                if "between 1 and 12" in str(e):
+                    raise e
+                raise ValueError(f"Invalid grade format: {grade_str}. Must be a number or 'PG'")
+        
+        # Apply the transformation
+        try:
+            df[grade_column] = df[grade_column].apply(transform_grade)
+            logger.info("Successfully validated and transformed grade column")
+        except ValueError as e:
+            logger.error(f"Grade validation error: {str(e)}")
+            raise HTTPException(status_code=400, detail=str(e))
         
         # Validate the DataFrame has the required columns
         if len(df.columns) < 3:
@@ -122,6 +159,7 @@ async def get_tour_guides():
                     "student_id": obj.properties.get("student_id", ""),
                     "gender": obj.properties.get("gender", ""),
                     "grade": obj.properties.get("grade", ""),
+                    "residential_status": obj.properties.get("residential_status", ""),
                     "embedding": obj.properties.get("embedding", [])[:10]
                 })
         
@@ -177,13 +215,19 @@ async def match_tour_guides(request: MatchingRequest):
                 for obj in all_guides.objects:
                     guide_gender = obj.properties.get("gender", "")
                     guide_grade = obj.properties.get("grade", "")
+                    guide_residential_status = obj.properties.get("residential_status", "")
                     
                     # Check if the gender starts with the same letter (case-insensitive)
                     gender_match = guide_gender and guide_gender[0].lower() == gender_first_char
                     # Check if the grade matches exactly
                     grade_match = guide_grade == request.grade
                     
-                    if gender_match and grade_match:
+                    # Check if residential status matches (if provided in request)
+                    residential_match = True
+                    if request.residential_status and guide_residential_status:
+                        residential_match = guide_residential_status.lower() == request.residential_status.lower()
+                    
+                    if gender_match and grade_match and residential_match:
                         filtered_guides.append(obj)
             
             # Check if we have results
@@ -204,6 +248,7 @@ async def match_tour_guides(request: MatchingRequest):
                         "student_id": obj.properties.get("student_id", ""),
                         "gender": obj.properties.get("gender", ""),
                         "grade": obj.properties.get("grade", ""),
+                        "residential_status": obj.properties.get("residential_status", ""),
                         "similarity_score": float(similarity),
                         "id": obj.uuid
                     })

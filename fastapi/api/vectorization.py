@@ -46,7 +46,7 @@ def create_schema():
                 wvc.config.Property(name="student_id", data_type=wvc.config.DataType.TEXT),
                 wvc.config.Property(name="gender", data_type=wvc.config.DataType.TEXT),
                 wvc.config.Property(name="grade", data_type=wvc.config.DataType.TEXT),
-                # Removed text_representation from schema
+                wvc.config.Property(name="residential_status", data_type=wvc.config.DataType.TEXT),
                 # Using the proper DataType for vector embeddings
                 wvc.config.Property(name="embedding", data_type=wvc.config.DataType.NUMBER_ARRAY),
             ]
@@ -161,11 +161,14 @@ def process_and_store_tour_guides(df: pd.DataFrame) -> Dict:
         tour_guide_collection = client.collections.get("TourGuide")
         
         for idx, row in df.iterrows():
+            # Get residential_status from the 4th column if it exists
+            residential_status = str(row.iloc[3]) if len(row) > 3 else ""
+            
             data_object = {
                 "student_id": str(row.iloc[0]),  # Assumes the first column is a unique identifier
                 "gender": str(row.iloc[1]),
                 "grade": str(row.iloc[2]),
-                # No longer storing text_representation
+                "residential_status": residential_status,
                 "embedding": embeddings[idx]
             }
             response = tour_guide_collection.data.insert(
