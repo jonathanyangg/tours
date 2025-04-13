@@ -5,7 +5,7 @@ export default function Navbar() {
     <div className="navbar bg-base-200 border-b border-base-300 sticky top-0 z-50 shadow-md">
       <div className="container mx-auto flex justify-between items-center">
         <div className="flex-1">
-          <Link href="/" className="text-xl font-semibold tracking-wide text-base-content">Home</Link>
+          <Link href="/" className="text-xl font-semibold tracking-wide text-base-content hover:text-base-content/60 hover:text-[1.3rem] transition-all duration-100">Home</Link>
         </div>
         <div className="flex-1 flex justify-center gap-4">
           <Link href="/tour-guides" className="btn btn-ghost text-base-content hover:bg-base-300">
@@ -35,4 +35,3 @@ export default function Navbar() {
     </div>
   );
 }
-
