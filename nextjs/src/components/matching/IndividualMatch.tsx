@@ -294,8 +294,8 @@ export default function IndividualMatch() {
             'bg-error/20 border border-error'
           }`}>
             <p className={`font-medium ${
-              status === 'success' ? 'text-success-content' : 
-              status === 'warning' ? 'text-warning-content' : 
+              status === 'success' ? 'text-base-content/80' : 
+              status === 'warning' ? 'text-base-content/80' : 
               'text-error-content'
             }`}>
               {message}
