@@ -148,7 +148,7 @@ async def get_tour_guides():
         
         # Using the newer API with proper method chain
         query_result = tour_guide_collection.query.fetch_objects(
-            limit=50  # Set limit to 50 records
+            limit=300  # Set limit to 50 records
         )
         
         # Convert the response to a format that can be JSON serialized
@@ -225,7 +225,10 @@ async def match_tour_guides(request: MatchingRequest):
                     # Check if residential status matches (if provided in request)
                     residential_match = True
                     if request.residential_status and guide_residential_status:
-                        residential_match = guide_residential_status.lower() == request.residential_status.lower()
+                        # Compare first letters only
+                        req_status = request.residential_status.lower()[0] if request.residential_status else ""
+                        guide_status = guide_residential_status.lower()[0] if guide_residential_status else ""
+                        residential_match = req_status == guide_status
                     
                     if gender_match and grade_match and residential_match:
                         filtered_guides.append(obj)

@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 from openai import OpenAI
 
 import weaviate
-import weaviate.classes as wvc  # Use the classes module as per the docs
+import weaviate.classes as wvc
 from weaviate.classes.init import Auth
 from weaviate.auth import AuthApiKey
 
@@ -187,7 +187,3 @@ def process_and_store_tour_guides(df: pd.DataFrame) -> Dict:
     except Exception as e:
         logger.error(f"Unexpected error: {e}")
         raise
-
-# For testing: Uncomment and adjust the following lines as needed.
-# df = pd.read_csv("tourguides_final.csv")
-# process_and_store_tour_guides(df)
