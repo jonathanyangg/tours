@@ -23,7 +23,7 @@ export default function WeaviateTest() {
   };
 
   return (
-    <div className="p-4 border rounded-lg bg-base-200 border-base-300">
+    <div className="p-4 border rounded-lg bg-white border-base-300">
       <h2 className="text-xl font-semibold mb-4 text-base-content">Weaviate Connection Test</h2>
       
       <button
@@ -43,7 +43,7 @@ export default function WeaviateTest() {
       {result && (
         <div className="mt-4">
           <h3 className="text-lg font-medium text-base-content mb-2">Result:</h3>
-          <pre className="bg-base-300 p-3 rounded overflow-auto max-h-60 text-sm text-base-content/70">
+          <pre className="bg-white p-3 rounded overflow-auto max-h-60 text-sm text-base-content/70">
             {JSON.stringify(result, null, 2)}
           </pre>
         </div>

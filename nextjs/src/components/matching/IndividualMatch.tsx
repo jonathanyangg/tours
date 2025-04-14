@@ -97,7 +97,7 @@ export default function IndividualMatch() {
   };
 
   return (
-    <div className="card bg-base-200 shadow-md border border-base-300 mb-8">
+    <div className="card bg-white shadow-md border border-base-300 mb-8">
       <div className="p-6">
         <h2 className="text-xl font-normal text-base-content mb-2">Individual Student Matching</h2>
         <p className="text-sm text-base-content/70 mb-6">Enter student information manually to find the best tour guide match.</p>
@@ -278,7 +278,7 @@ export default function IndividualMatch() {
           <div className="flex justify-end mt-8">
             <button 
               type="submit" 
-              className={`btn ${isLoading ? 'loading' : ''} btn-primary`}
+              className={`btn ${isLoading ? 'loading' : ''} btn-primary transition-all duration-200 hover:scale-103`}
               disabled={isLoading}
             >
               {isLoading ? 'Finding Matches...' : 'Find Match'}

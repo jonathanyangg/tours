@@ -28,7 +28,7 @@ export default function TourGuides() {
   }, []);
 
   return (
-    <div className="card bg-base-200 shadow-md border border-base-300">
+    <div className="card bg-white shadow-md border border-base-300">
       <div className="p-8">
         <h1 className="text-2xl font-normal text-base-content mb-4">Student Information</h1>
         <p className="text-base-content mb-8">View student information from the database.</p>
@@ -50,7 +50,7 @@ export default function TourGuides() {
           <div className="overflow-x-auto">
             <table className="table w-full">
               <thead>
-                <tr className="bg-base-300">
+                <tr className="bg-white">
                   <th className="text-base-content font-medium text-xs uppercase tracking-wider">
                     Student ID
                   </th>
@@ -67,8 +67,8 @@ export default function TourGuides() {
               </thead>
               <tbody>
                 {students.map((student, index) => (
-                  <tr key={index} className="hover:bg-base-300">
-                    <td className="text-base-content/90">
+                  <tr key={index} className="hover:bg-base-200 transition-all duration-200 hover:scale-[1.01] hover:shadow-sm">
+                    <td className="text-base-content">
                       {student.student_id}
                     </td>
                     <td className="text-base-content/80">

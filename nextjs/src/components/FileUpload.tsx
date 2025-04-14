@@ -89,7 +89,7 @@ export default function FileUpload({ onUploadSuccess, onUploadError }: FileUploa
   return (
     <div className="w-full">
       <div 
-        className={`flex flex-col items-center justify-center p-8 border-2 border-dashed rounded-lg shadow-md ${
+        className={`flex flex-col items-center justify-center p-8 border-2 border-dashed rounded-lg shadow-md transition-all duration-200 hover:scale-[1.02] hover:shadow-lg ${
           isDragging 
             ? 'border-primary bg-primary/10' 
             : 'border-base-300 bg-base-100'
@@ -119,7 +119,7 @@ export default function FileUpload({ onUploadSuccess, onUploadError }: FileUploa
             <div className="mb-2 text-center text-base-content/80 font-normal">
               Uploading... {uploadProgress}%
             </div>
-            <div className="w-full bg-base-300 rounded-full h-2.5">
+            <div className="w-full bg-white rounded-full h-2.5">
               <div 
                 className="bg-primary h-2.5 rounded-full" 
                 style={{ width: `${uploadProgress}%` }}
