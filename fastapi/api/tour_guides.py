@@ -148,7 +148,7 @@ async def get_tour_guides():
         
         # Using the newer API with proper method chain
         query_result = tour_guide_collection.query.fetch_objects(
-            limit=300  # Set limit to 50 records
+            limit=50  # Set limit to 50 records
         )
         
         # Convert the response to a format that can be JSON serialized
