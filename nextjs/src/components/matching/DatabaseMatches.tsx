@@ -39,19 +39,19 @@ export default function DatabaseMatches() {
                   <tr className="hover:bg-base-200 transition-all duration-200 hover:scale-[1.01] hover:shadow-sm">
                     <td className="text-base-content/70">VS-1234</td>
                     <td className="text-base-content">Jane Smith</td>
-                    <td className="text-base-content/70">May 15, 2025</td>
+                    <td className="text-base-content/70">11:00 AM, May 15, 2025</td>
                     <td><button className="btn btn-sm btn-success transition-all duration-200 hover:scale-103">Match</button></td>
                   </tr>
                   <tr className="hover:bg-base-200 transition-all duration-200 hover:scale-[1.01] hover:shadow-sm">
                     <td className="text-base-content/70">VS-1235</td>
                     <td className="text-base-content">Henry Nolan</td>
-                    <td className="text-base-content/70">May 16, 2025</td>
+                    <td className="text-base-content/70">10:30 AM, May 16, 2025</td>
                     <td><button className="btn btn-sm btn-success transition-all duration-200 hover:scale-103">Match</button></td>
                   </tr>
                   <tr className="hover:bg-base-200 transition-all duration-200 hover:scale-[1.01] hover:shadow-sm">
                     <td className="text-base-content/70">VS-1236</td>
                     <td className="text-base-content">John Doe</td>
-                    <td className="text-base-content/70">May 17, 2025</td>
+                    <td className="text-base-content/70">2:00 PM, May 17, 2025</td>
                     <td><button className="btn btn-sm btn-success transition-all duration-200 hover:scale-103">Match</button></td>
                   </tr>
                 </tbody>
