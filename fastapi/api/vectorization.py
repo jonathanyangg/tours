@@ -14,6 +14,10 @@ from weaviate.auth import AuthApiKey
 # Load environment variables
 load_dotenv()
 
+openai_key = os.environ.get("OPENAI_API_KEY")
+weaviate_url = os.environ["WEAVIATE_URL"]
+weaviate_api_key = os.environ["WEAVIATE_API_KEY"]
+
 # Configure OpenAI client with the new API structure
 client_openai = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 
@@ -21,13 +25,14 @@ client_openai = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Initialize Weaviate client
-weaviate_url = os.environ["WEAVIATE_URL"]
-weaviate_api_key = os.environ["WEAVIATE_API_KEY"]
+headers = {
+    "X-OpenAI-Api-Key": openai_key,
+}
 
 client = weaviate.connect_to_weaviate_cloud(
         cluster_url=weaviate_url,
         auth_credentials=Auth.api_key(weaviate_api_key),
+        headers=headers
     )
 
 # Configuration constants
@@ -47,14 +52,22 @@ def create_schema():
                 wvc.config.Property(name="gender", data_type=wvc.config.DataType.TEXT),
                 wvc.config.Property(name="grade", data_type=wvc.config.DataType.TEXT),
                 wvc.config.Property(name="residential_status", data_type=wvc.config.DataType.TEXT),
-                # Using the proper DataType for vector embeddings
-                wvc.config.Property(name="embedding", data_type=wvc.config.DataType.NUMBER_ARRAY),
+                wvc.config.Property(name="text_representation", data_type=wvc.config.DataType.TEXT),
             ]
+            
+            # Configure the OpenAI vectorizer
+            vectorizer_config = wvc.config.Configure.NamedVectors.text2vec_openai(
+                name="text_vector",
+                source_properties=["text_representation"],
+                model="text-embedding-3-large",
+                dimensions=1024
+            )
+            
             client.collections.create(
                 name="TourGuide",
                 description="A tour guide with their information and vector embedding",
                 properties=properties,
-                vectorizer_config=wvc.config.Configure.Vectorizer.none(),  # Using our own embeddings
+                vectorizer_config=[vectorizer_config]
             )
             logger.info("Created TourGuide schema in Weaviate")
         else:
@@ -72,55 +85,6 @@ def format_dataframe_columns(df: pd.DataFrame, start_pos: int = 3) -> pd.DataFra
     )
     return df
 
-def generate_embeddings(texts: List[str], batch_size: int = BATCH_SIZE) -> List[List[float]]:
-    """Generate embeddings for a list of texts using OpenAI's API in batches.
-    
-    Args:
-        texts: List of text strings to get embeddings for
-        batch_size: Number of texts to process in each API call
-        
-    Returns:
-        List of embedding vectors
-    """
-    all_embeddings = []
-    
-    for i in range(0, len(texts), batch_size):
-        batch = texts[i:i+batch_size]
-        try:
-            # Clean and validate the batch
-            cleaned_batch = []
-            for text in batch:
-                # Handle None/null values
-                if pd.isna(text):
-                    text = ""
-                
-                # Convert to string and clean
-                text = str(text).strip()
-                
-                # Ensure non-empty string
-                if not text:
-                    text = "no information provided"
-                
-                cleaned_batch.append(text)
-            
-            logger.info(f"Processing batch {i//batch_size + 1} of {(len(texts)-1)//batch_size + 1}")
-            logger.info(f"Sample text from batch: {cleaned_batch[0][:100]}...")
-            
-            # Use the new OpenAI client API structure
-            response = client_openai.embeddings.create(
-                model=EMBEDDING_MODEL,
-                input=cleaned_batch,
-                encoding_format="float"
-            )
-            batch_embeddings = [data.embedding for data in response.data]
-            all_embeddings.extend(batch_embeddings)
-            
-        except Exception as e:
-            logger.error(f"Error in batch {i//batch_size + 1}: {e}")
-            logger.error(f"Problematic batch content: {batch}")
-            raise
-    
-    return all_embeddings
 
 def process_and_store_tour_guides(df: pd.DataFrame) -> Dict:
     """
@@ -129,7 +93,6 @@ def process_and_store_tour_guides(df: pd.DataFrame) -> Dict:
     This includes:
       - Creating (or recreating) the schema.
       - Formatting a text representation of each row.
-      - Generating vector embeddings for the text representations.
       - Inserting objects with the v4 API.
     """
     try:
@@ -150,32 +113,37 @@ def process_and_store_tour_guides(df: pd.DataFrame) -> Dict:
         # Format the text representation
         df = format_dataframe_columns(df)
         
-        # Generate embeddings for the text representations
-        logger.info("Generating embeddings for text representations...")
-        embeddings = generate_embeddings(df['text_representation'].tolist())
-        logger.info(f"Generated {len(embeddings)} embeddings of dimension {len(embeddings[0])}")
-        
         # Insert each tour guide object into Weaviate using the collections API (v4)
         logger.info("Inserting tour guide data into Weaviate...")
         count = 0
         tour_guide_collection = client.collections.get("TourGuide")
         
-        for idx, row in df.iterrows():
-            # Get residential_status from the 4th column if it exists
-            residential_status = str(row.iloc[3]) if len(row) > 3 else ""
-            
-            data_object = {
-                "student_id": str(row.iloc[0]),  # Assumes the first column is a unique identifier
-                "gender": str(row.iloc[1]),
-                "grade": str(row.iloc[2]),
-                "residential_status": residential_status,
-                "embedding": embeddings[idx]
-            }
-            response = tour_guide_collection.data.insert(
-                properties=data_object
-            )
-            logger.info(f"Inserted object {row.iloc[0]} with response: {response}")
-            count += 1
+        with tour_guide_collection.batch.dynamic() as batch:
+            for idx, row in df.iterrows():
+                # Get residential_status from the 4th column if it exists
+                residential_status = str(row.iloc[3]) if len(row) > 3 else ""
+                
+                data_object = {
+                    "student_id": str(row.iloc[0]),  # Assumes the first column is a unique identifier
+                    "gender": str(row.iloc[1]),
+                    "grade": str(row.iloc[2]),
+                    "residential_status": residential_status,
+                    "text_representation": row['text_representation']
+                }
+                
+                batch.add_object(
+                    properties=data_object
+                )
+                count += 1
+                
+                if batch.number_errors > 10:
+                    logger.error("Batch import stopped due to excessive errors.")
+                    break
+
+        failed_objects = tour_guide_collection.batch.failed_objects
+        if failed_objects:
+            logger.error(f"Number of failed imports: {len(failed_objects)}")
+            logger.error(f"First failed object: {failed_objects[0]}")
 
         logger.info(f"Successfully inserted {count} tour guides into Weaviate.")
         return {
