@@ -117,6 +117,7 @@ export default function VisitingForm() {
                       value={formData.name}
                       onChange={handleChange}
                       className="input input-bordered bg-base-100 border-base-300 text-base-content placeholder:text-base-content/50 w-full"
+                      placeholder="Enter your full name"
                       required
                     />
                   </div>
@@ -131,6 +132,7 @@ export default function VisitingForm() {
                       value={formData.email}
                       onChange={handleChange}
                       className="input input-bordered bg-base-100 border-base-300 text-base-content placeholder:text-base-content/50 w-full"
+                      placeholder="Enter your email address"
                       required
                     />
                   </div>
@@ -199,6 +201,7 @@ export default function VisitingForm() {
                       value={formData.city_country}
                       onChange={handleChange}
                       className="input input-bordered bg-base-100 border-base-300 text-base-content placeholder:text-base-content/50 w-full"
+                      placeholder="e.g., New York, USA"
                       required
                     />
                   </div>
@@ -255,6 +258,7 @@ export default function VisitingForm() {
                       value={formData.race}
                       onChange={handleChange}
                       className="input input-bordered bg-base-100 border-base-300 text-base-content placeholder:text-base-content/50 w-full"
+                      placeholder="e.g., Asian, Hispanic, Caucasian"
                     />
                   </div>
 

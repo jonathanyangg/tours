@@ -294,7 +294,7 @@ export default function IndividualMatch() {
               className={`btn ${isLoading ? 'loading' : ''} btn-primary transition-all duration-200 hover:scale-103`}
               disabled={isLoading}
             >
-              {isLoading ? 'Finding Matches...' : 'Match'}
+              {isLoading ? '' : 'Match'}
             </button>
           </div>
         </form>
