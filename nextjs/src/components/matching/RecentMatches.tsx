@@ -1,4 +1,66 @@
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import { getMatchedStudents } from '@/services/api';
+
+type MatchedStudent = {
+  name: string;
+  email: string;
+  tour_datetime: string;
+  matched_tour_guide: string;
+};
+
 export default function RecentMatches() {
+  const [matchedStudents, setMatchedStudents] = useState<MatchedStudent[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchMatchedStudents();
+  }, []);
+
+  const fetchMatchedStudents = async () => {
+    try {
+      const response = await getMatchedStudents();
+      if (response.status === 'success') {
+        setMatchedStudents(response.students);
+      } else {
+        setError('Failed to fetch matched students');
+      }
+    } catch (err) {
+      console.error('Error fetching matched students:', err);
+      setError(err instanceof Error ? err.message : 'An error occurred');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="card bg-white shadow-md border border-base-300">
+        <div className="p-6">
+          <h2 className="text-xl font-normal text-base-content mb-6">Recent Matches</h2>
+          <div className="flex justify-center items-center h-64">
+            <span className="loading loading-spinner loading-lg text-primary"></span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="card bg-white shadow-md border border-base-300">
+        <div className="p-6">
+          <h2 className="text-xl font-normal text-base-content mb-6">Recent Matches</h2>
+          <div className="p-4 bg-error/20 text-error-content rounded-md">
+            <p>{error}</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="card bg-white shadow-md border border-base-300">
       <div className="p-6">
@@ -14,24 +76,21 @@ export default function RecentMatches() {
               </tr>
             </thead>
             <tbody>
-              <tr className="hover:bg-base-200 transition-all duration-200 hover:scale-[1.01] hover:shadow-sm">
-                <td className="text-base-content">Jane Smith</td>
-                <td className="text-base-content">John Doe</td>
-                <td className="text-base-content/70">May 15, 2023</td>
-                <td><button className="btn btn-sm btn-success">Confirmed</button></td>
-              </tr>
-              <tr className="hover:bg-base-200 transition-all duration-200 hover:scale-[1.01] hover:shadow-sm">
-                <td className="text-base-content">Alice Johnson</td>
-                <td className="text-base-content">Bob Wilson</td>
-                <td className="text-base-content/70">May 14, 2023</td>
-                <td><button className="btn btn-sm bg-amber-500 text-white border-none">Pending</button></td>
-              </tr>
-              <tr className="hover:bg-base-200 transition-all duration-200 hover:scale-[1.01] hover:shadow-sm">
-                <td className="text-base-content">Sarah Brown</td>
-                <td className="text-base-content">Mike Davis</td>
-                <td className="text-base-content/70">May 13, 2023</td>
-                <td><button className="btn btn-sm btn-success">Confirmed</button></td>
-              </tr>
+              {matchedStudents.map((student, index) => (
+                <tr key={index} className="hover:bg-base-200 transition-all duration-200 hover:scale-[1.01] hover:shadow-sm">
+                  <td className="text-base-content">{student.name}</td>
+                  <td className="text-base-content">{student.matched_tour_guide}</td>
+                  <td className="text-base-content/70">{new Date(student.tour_datetime).toLocaleString()}</td>
+                  <td><button className="btn btn-sm btn-success">Confirmed</button></td>
+                </tr>
+              ))}
+              {matchedStudents.length === 0 && (
+                <tr>
+                  <td colSpan={4} className="text-center text-base-content/70 py-4">
+                    No matches found
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>

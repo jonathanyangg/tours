@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { matchTourGuidesFromDatabase } from '@/services/api';
+import { matchTourGuidesFromDatabase, updateStudentMatch } from '@/services/api';
 
 type VisitingStudent = {
   name: string;
@@ -73,7 +73,14 @@ export default function DatabaseMatches() {
 
   const handleMatch = async (student: VisitingStudent) => {
     try {
-      console.log('Matching student:', student);
+      console.log('Matching student with details:', {
+        name: student.name,
+        email: student.email,
+        gender: student.gender,
+        grade: student.grade,
+        residential_status: student.residential_status,
+        tour_datetime: student.tour_datetime
+      });
       
       const matchData = {
         student_id: student.email, // Using email as ID
@@ -89,10 +96,10 @@ export default function DatabaseMatches() {
         time_period: student.tour_datetime
       };
       
-      console.log('Match data:', matchData);
+      console.log('Sending match request with data:', JSON.stringify(matchData, null, 2));
 
       const result = await matchTourGuidesFromDatabase(matchData);
-      console.log('Match result:', result);
+      console.log('Match result:', JSON.stringify(result, null, 2));
       
       if (result.status === 'success') {
         setStudentMatches(prev => ({
@@ -130,6 +137,37 @@ export default function DatabaseMatches() {
         [student.email]: err instanceof Error ? err.message : 'Unknown error'
       }));
       setExpandedStudents(prev => new Set([...prev, student.email]));
+    }
+  };
+
+  const handleChooseMatch = async (studentEmail: string, tourGuideId: string) => {
+    try {
+      console.log('Choosing match for student:', studentEmail, 'with tour guide:', tourGuideId);
+      await updateStudentMatch(studentEmail, tourGuideId);
+      
+      // Remove the student from the list
+      setVisitingStudents(prev => prev.filter(student => student.email !== studentEmail));
+      
+      // Show success message
+      setMatchMessages(prev => ({
+        ...prev,
+        [studentEmail]: 'Successfully matched with tour guide!'
+      }));
+      
+      // Hide the matches after a short delay
+      setTimeout(() => {
+        setExpandedStudents(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(studentEmail);
+          return newSet;
+        });
+      }, 2000);
+    } catch (err) {
+      console.error('Error choosing match:', err);
+      setMatchMessages(prev => ({
+        ...prev,
+        [studentEmail]: err instanceof Error ? err.message : 'Failed to choose match'
+      }));
     }
   };
 
@@ -248,8 +286,14 @@ export default function DatabaseMatches() {
                                         <p className="text-base-content/70">Gender: {match.gender}</p>
                                         <p className="text-base-content/70">Residential Status: {match.residential_status}</p>
                                       </div>
-                                      <div className="text-right">
+                                      <div className="text-right space-y-2">
                                         <p className="text-success font-medium">Match Score: {formatSimilarity(1 - (match.distance || 0))}</p>
+                                        <button
+                                          className="btn btn-sm btn-primary"
+                                          onClick={() => handleChooseMatch(student.email, match.id)}
+                                        >
+                                          Choose Match
+                                        </button>
                                       </div>
                                     </div>
                                   </div>

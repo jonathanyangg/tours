@@ -107,6 +107,12 @@ export async function matchTourGuidesFromDatabase(matchData: {
   time_period?: string;
 }) {
   try {
+    console.log('Making request to match tour guides from database:', {
+      url: `${API_BASE_URL}/match-tour-guides-from-database`,
+      method: 'POST',
+      data: JSON.stringify(matchData, null, 2)
+    });
+
     const response = await fetch(`${API_BASE_URL}/match-tour-guides-from-database`, {
       method: 'POST',
       headers: {
@@ -115,14 +121,26 @@ export async function matchTourGuidesFromDatabase(matchData: {
       body: JSON.stringify(matchData),
     });
 
+    console.log('Received response:', {
+      status: response.status,
+      statusText: response.statusText,
+      headers: Object.fromEntries(response.headers.entries())
+    });
+
     if (!response.ok) {
       const errorData = await response.json();
+      console.error('Error response data:', errorData);
       throw new Error(errorData.detail || 'Failed to match tour guides from database');
     }
 
-    return await response.json();
+    const data = await response.json();
+    console.log('Success response data:', JSON.stringify(data, null, 2));
+    return data;
   } catch (error) {
-    console.error('Error matching tour guides from database:', error);
+    console.error('Error matching tour guides from database:', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined
+    });
     throw error;
   }
 }
@@ -161,6 +179,83 @@ export async function testWeaviateConnection() {
     return await response.json();
   } catch (error) {
     console.error('Error testing Weaviate connection:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get unmatched visiting students
+ * @returns List of unmatched visiting students
+ */
+export async function getUnmatchedStudents() {
+  try {
+    const response = await fetch(`${API_BASE_URL}/visiting-students/unmatched`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || 'Failed to get unmatched students');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error getting unmatched students:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get matched visiting students
+ * @returns List of matched visiting students
+ */
+export async function getMatchedStudents() {
+  try {
+    const response = await fetch(`${API_BASE_URL}/visiting-students/matched`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || 'Failed to get matched students');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error getting matched students:', error);
+    throw error;
+  }
+}
+
+/**
+ * Update a student's match status with a tour guide
+ * @param studentEmail The email of the student to match
+ * @param tourGuideId The ID of the tour guide to match with
+ * @returns The result of the match update
+ */
+export async function updateStudentMatch(studentEmail: string, tourGuideId: string) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/visiting-students/${studentEmail}/match?tour_guide_id=${tourGuideId}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || 'Failed to update student match');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error updating student match:', error);
     throw error;
   }
 } 

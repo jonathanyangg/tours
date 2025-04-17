@@ -38,16 +38,14 @@ headers = {
 tour_guides_client = weaviate.connect_to_weaviate_cloud(
     cluster_url=weaviate_url,
     auth_credentials=Auth.api_key(weaviate_api_key),
-    headers=headers,
-    timeout_config=(10, 60)  # (connect timeout, read timeout) in seconds
+    headers=headers
 )
 
 # Connect to visiting students Weaviate instance
 visiting_students_client = weaviate.connect_to_weaviate_cloud(
     cluster_url=visiting_student_weaviate_url,
     auth_credentials=Auth.api_key(visiting_student_weaviate_api_key),
-    headers=headers,
-    timeout_config=(10, 60)  # (connect timeout, read timeout) in seconds
+    headers=headers
 )
 
 # Define the matching request models
@@ -64,6 +62,32 @@ class MatchingRequest(BaseModel):
     race: str = None
     time_period: str = None
 
+    def validate_grade(self, grade: str) -> str:
+        """Validate and transform grade values."""
+        if not grade:
+            raise ValueError("Grade cannot be empty")
+        
+        # Convert to string and strip whitespace
+        grade_str = str(grade).strip().upper()
+        
+        # Handle "PG" case
+        if grade_str == "PG":
+            return "12"
+        
+        try:
+            # Try to convert to integer
+            grade_num = int(grade_str)
+            if grade_num < 1 or grade_num > 12:
+                raise ValueError(f"Grade must be between 1 and 12, got {grade_num}")
+            return str(grade_num)
+        except ValueError as e:
+            if "between 1 and 12" in str(e):
+                raise e
+            raise ValueError(f"Invalid grade format: {grade_str}. Must be a number or 'PG'")
+
+    def __init__(self, **data):
+        super().__init__(**data)
+        self.grade = self.validate_grade(self.grade)
 
 @router.post("/upload-tour-guides")
 async def upload_tour_guides(file: UploadFile = File(...)):
@@ -269,9 +293,11 @@ async def match_tour_guides_from_database(request: MatchingRequest):
     """Find the best matching tour guides based on a visiting student from the database."""
     try:
         logger.info(f"Received database matching request: {request}")
+        logger.info(f"Request data: student_id={request.student_id}, gender={request.gender}, grade={request.grade}, residential_status={request.residential_status}")
         
         # Get the visiting student's vector from the visiting student database
         visiting_student_collection = visiting_students_client.collections.get("VisitingStudent")
+        logger.info("Fetching visiting student from database...")
         visiting_student = visiting_student_collection.query.fetch_objects(
             filters=Filter.by_property("email").equal(request.student_id),
             limit=1,
@@ -279,12 +305,13 @@ async def match_tour_guides_from_database(request: MatchingRequest):
         )
         
         if not visiting_student.objects:
+            logger.error(f"No visiting student found with email: {request.student_id}")
             raise HTTPException(status_code=404, detail="Visiting student not found")
         
         # Log the visiting student object structure without vector
         student_obj = visiting_student.objects[0]
         student_data = {k: v for k, v in student_obj.properties.items() if k != 'vector'}
-        logger.info(f"Visiting student object (without vector): {student_data}")
+        logger.info(f"Found visiting student: {json.dumps(student_data, indent=2)}")
         
         # Get the vector from the visiting student
         visiting_student_vector = visiting_student.objects[0].vector.get('default', [])
@@ -309,10 +336,11 @@ async def match_tour_guides_from_database(request: MatchingRequest):
             combined_filter = combined_filter & residential_filter
         
         # Log the search parameters
-        logger.info(f"Searching with vector of length: {len(visiting_student_vector) if visiting_student_vector else 'None'}")
-        logger.info(f"Using filters: gender={gender_first_char}*, grade={request.grade}")
+        logger.info(f"Searching with filters: {combined_filter}")
+        logger.info(f"Vector length: {len(visiting_student_vector) if visiting_student_vector else 'None'}")
         
         # Perform vector search with filters using the visiting student's vector
+        logger.info("Performing vector search...")
         response = tour_guide_collection.query.near_vector(
             near_vector=visiting_student_vector,  # Use the vector values directly
             limit=6,
@@ -324,30 +352,39 @@ async def match_tour_guides_from_database(request: MatchingRequest):
         matches = []
         if response and hasattr(response, 'objects'):
             for obj in response.objects:
-                matches.append({
+                match_data = {
                     "student_id": obj.properties.get("student_id", ""),
                     "gender": obj.properties.get("gender", ""),
                     "grade": obj.properties.get("grade", ""),
                     "residential_status": obj.properties.get("residential_status", ""),
                     "distance": obj.metadata.distance if hasattr(obj.metadata, 'distance') else None,
-                    "id": obj.uuid
-                })
+                    "id": str(obj.uuid)  # Convert UUID to string
+                }
+                matches.append(match_data)
+                # Log without the UUID to avoid serialization issues
+                log_data = match_data.copy()
+                log_data["id"] = str(log_data["id"])  # Ensure ID is string for logging
+                logger.info(f"Found match: {json.dumps(log_data, indent=2)}")
         
         if matches:
+            logger.info(f"Found {len(matches)} matching tour guides")
             return {
                 "status": "success",
                 "message": f"Found {len(matches)} matching tour guides",
                 "matches": matches
             }
         else:
+            logger.warning("No matching tour guides found")
             return {
                 "status": "warning",
                 "message": "No matching tour guides found with the same gender and grade",
                 "matches": []
             }
             
+    except HTTPException:
+        raise
     except Exception as e:
-        logger.error(f"Error matching tour guides: {e}")
+        logger.error(f"Error matching tour guides: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/test-weaviate")

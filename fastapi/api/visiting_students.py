@@ -34,8 +34,7 @@ try:
     client = weaviate.connect_to_weaviate_cloud(
         cluster_url=weaviate_url,
         auth_credentials=Auth.api_key(weaviate_api_key),
-        headers=headers,
-        timeout_config=(10, 60)  # (connect timeout, read timeout) in seconds
+        headers=headers
     )
     logger.info("Successfully connected to Weaviate")
 except Exception as e:
@@ -55,6 +54,8 @@ class VisitingStudent(BaseModel):
     additional_information: Optional[str] = None
     race: Optional[str] = None
     tour_datetime: str
+    is_matched: Optional[bool] = False
+    matched_tour_guide: Optional[str] = None
 
 def create_visiting_student_schema():
     """Create the schema for visiting students if it doesn't exist."""
@@ -137,6 +138,16 @@ def create_visiting_student_schema():
                         "description": "The scheduled date and time of the tour",
                     },
                     {
+                        "name": "is_matched",
+                        "data_type": DataType.INT,
+                        "description": "Whether the student has been matched with a tour guide (0=unmatched, 1=matched)",
+                    },
+                    {
+                        "name": "matched_tour_guide",
+                        "data_type": DataType.TEXT,
+                        "description": "The ID of the matched tour guide",
+                    },
+                    {
                         "name": "text_representation",
                         "data_type": DataType.TEXT,
                         "description": "A text representation of the student's information for vector search",
@@ -148,9 +159,17 @@ def create_visiting_student_schema():
             
             # Verify the schema was created correctly
             schema = client.collections.get("VisitingStudent").config.get()
-            logger.info(f"Schema configuration: {schema}")
+            # Log only the relevant parts of the schema
+            logger.info(f"Schema name: {schema.name}")
+            logger.info(f"Schema description: {schema.description}")
+            logger.info(f"Schema properties: {[prop.name for prop in schema.properties]}")
         else:
             logger.info("VisitingStudent schema already exists")
+            # Log only the relevant parts of the existing schema
+            schema = client.collections.get("VisitingStudent").config.get()
+            logger.info(f"Schema name: {schema.name}")
+            logger.info(f"Schema description: {schema.description}")
+            logger.info(f"Schema properties: {[prop.name for prop in schema.properties]}")
     except Exception as e:
         logger.error(f"Error creating VisitingStudent schema: {e}")
         raise
@@ -207,9 +226,6 @@ async def create_visiting_student(student: VisitingStudent):
         text_representation = ", ".join(text_fields)
         logger.info(f"Generated text representation: {text_representation}")
 
-        # Log the generated text representation
-        logger.info(f"Generated text representation: {text_representation}")
-        
         # Log that vector was generated
         logger.info("Vector property generated successfully")
         
@@ -231,6 +247,8 @@ async def create_visiting_student(student: VisitingStudent):
             "additional_information": student.additional_information,
             "race": student.race,
             "tour_datetime": student.tour_datetime,
+            "is_matched": 0,  # Initialize as unmatched (0)
+            "matched_tour_guide": student.matched_tour_guide,
             "text_representation": text_representation
         }
         logger.info(f"Prepared student data for insertion: {json.dumps(student_data, indent=2)}")
@@ -311,4 +329,115 @@ async def get_visiting_students():
 
     except Exception as e:
         logger.error(f"Error retrieving visiting students: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/visiting-students/unmatched")
+async def get_unmatched_students():
+    """Retrieve all unmatched visiting students from the database."""
+    try:
+        logger.info("Fetching unmatched visiting students")
+        visiting_student_collection = client.collections.get("VisitingStudent")
+        
+        # Query unmatched visiting students
+        response = visiting_student_collection.query.fetch_objects(
+            filters=Filter.by_property("is_matched").equal(0),  # Use 0 for unmatched
+            limit=100,
+            return_properties=[
+                "name", "email", "gender", "grade", "residential_status",
+                "city_country", "sports", "extracurricular_activities",
+                "academic_interests", "additional_information", "race",
+                "tour_datetime", "is_matched", "matched_tour_guide"
+            ]
+        )
+
+        students = []
+        if response and hasattr(response, 'objects'):
+            for obj in response.objects:
+                students.append(obj.properties)
+        
+        logger.info(f"Retrieved {len(students)} unmatched visiting students")
+
+        return {
+            "status": "success",
+            "students": students
+        }
+
+    except Exception as e:
+        logger.error(f"Error retrieving unmatched visiting students: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/visiting-students/matched")
+async def get_matched_students():
+    """Retrieve all matched visiting students from the database."""
+    try:
+        logger.info("Fetching matched visiting students")
+        visiting_student_collection = client.collections.get("VisitingStudent")
+        
+        # Query matched visiting students
+        response = visiting_student_collection.query.fetch_objects(
+            filters=Filter.by_property("is_matched").equal(1),  # Use 1 for matched
+            limit=100,
+            return_properties=[
+                "name", "email", "gender", "grade", "residential_status",
+                "city_country", "sports", "extracurricular_activities",
+                "academic_interests", "additional_information", "race",
+                "tour_datetime", "is_matched", "matched_tour_guide"
+            ]
+        )
+
+        students = []
+        if response and hasattr(response, 'objects'):
+            for obj in response.objects:
+                students.append(obj.properties)
+        
+        logger.info(f"Retrieved {len(students)} matched visiting students")
+
+        return {
+            "status": "success",
+            "students": students
+        }
+
+    except Exception as e:
+        logger.error(f"Error retrieving matched visiting students: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/visiting-students/{student_email}/match")
+async def update_student_match(student_email: str, tour_guide_id: str):
+    """Update a visiting student's match status with a tour guide."""
+    try:
+        logger.info(f"Updating match status for student {student_email} with tour guide {tour_guide_id}")
+        visiting_student_collection = client.collections.get("VisitingStudent")
+        
+        # Find the student by email
+        student = visiting_student_collection.query.fetch_objects(
+            filters=Filter.by_property("email").equal(student_email),
+            limit=1
+        )
+        
+        if not student.objects:
+            logger.error(f"Student not found with email: {student_email}")
+            raise HTTPException(status_code=404, detail="Visiting student not found")
+        
+        # Update the student's match status
+        student_obj = student.objects[0]
+        student_obj.properties["is_matched"] = 1  # Use 1 for matched
+        student_obj.properties["matched_tour_guide"] = tour_guide_id
+        
+        # Update the object in Weaviate
+        visiting_student_collection.data.update(
+            uuid=student_obj.uuid,
+            properties=student_obj.properties
+        )
+        
+        logger.info(f"Successfully updated match status for student {student_email}")
+        
+        return {
+            "status": "success",
+            "message": "Student match status updated successfully"
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating student match status: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e)) 
