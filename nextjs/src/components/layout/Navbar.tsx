@@ -1,6 +1,15 @@
+'use client';
+
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 
 export default function Navbar() {
+  const pathname = usePathname();
+
+  const isActive = (path: string) => {
+    return pathname === path ? 'text-primary' : 'text-base-content/70 hover:text-primary';
+  };
+
   return (
     <div className="navbar bg-base-100 border-b border-base-300 sticky top-0 z-50 shadow-md">
       <div className="container mx-auto flex justify-between items-center">
@@ -20,6 +29,14 @@ export default function Navbar() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
             </svg>
             Update Tour Guide Database
+          </Link>
+          <Link
+            href="/visitingform"
+            className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
+              pathname === '/visitingform' ? 'border-primary' : 'border-transparent'
+            } ${isActive('/visitingform')}`}
+          >
+            Register for Tour
           </Link>
         </div>
         <div className="flex-1 flex justify-end">

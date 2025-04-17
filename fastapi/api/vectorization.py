@@ -15,8 +15,8 @@ from weaviate.auth import AuthApiKey
 load_dotenv()
 
 openai_key = os.environ.get("OPENAI_API_KEY")
-weaviate_url = os.environ["WEAVIATE_URL"]
-weaviate_api_key = os.environ["WEAVIATE_API_KEY"]
+weaviate_url = os.environ["TOUR_GUIDE_WEAVIATE_URL"]
+weaviate_api_key = os.environ["TOUR_GUIDE_WEAVIATE_API_KEY"]
 
 # Configure OpenAI client with the new API structure
 client_openai = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
