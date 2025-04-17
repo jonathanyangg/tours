@@ -14,6 +14,7 @@ import numpy as np
 from weaviate.classes.init import Auth
 from pydantic import BaseModel
 from weaviate.collections.classes.filters import Filter
+from weaviate.classes.query import MetadataQuery
 
 openai_key = os.environ.get("OPENAI_API_KEY")
 weaviate_url = os.environ["WEAVIATE_URL"]
@@ -181,17 +182,17 @@ async def match_tour_guides(request: MatchingRequest):
         # Format text representation similar to how we do it for tour guides
         text_fields = []
         if request.residential_status:
-            text_fields.append(f"residential_status: {request.residential_status}")
+            text_fields.append(f"residential status: {request.residential_status}")
         if request.city_country:
-            text_fields.append(f"city_country: {request.city_country}")
+            text_fields.append(f"city country: {request.city_country}")
         if request.sports:
             text_fields.append(f"sports: {request.sports}")
         if request.extracurricular_activities:
-            text_fields.append(f"extracurricular_activities: {request.extracurricular_activities}")
+            text_fields.append(f"extracurricular activities: {request.extracurricular_activities}")
         if request.academic_interests:
-            text_fields.append(f"academic_interests: {request.academic_interests}")
+            text_fields.append(f"academic interests: {request.academic_interests}")
         if request.additional_information:
-            text_fields.append(f"additional_information: {request.additional_information}")
+            text_fields.append(f"additional information: {request.additional_information}")
         
         text_representation = ", ".join(text_fields)
         logger.info(f"Generated text representation: {text_representation}")
@@ -220,8 +221,9 @@ async def match_tour_guides(request: MatchingRequest):
         # Perform vector search with filters
         response = tour_guide_collection.query.near_text(
             query=text_representation,
-            limit=3,
-            filters=combined_filter
+            limit=6,
+            filters=combined_filter,
+            return_metadata=MetadataQuery(distance=True)
         )
         
         # Process the results
@@ -234,6 +236,7 @@ async def match_tour_guides(request: MatchingRequest):
                     "grade": obj.properties.get("grade", ""),
                     "residential_status": obj.properties.get("residential_status", ""),
                     "similarity_score": obj.metadata.certainty,
+                    "distance": obj.metadata.distance if hasattr(obj.metadata, 'distance') else None,
                     "id": obj.uuid
                 })
         

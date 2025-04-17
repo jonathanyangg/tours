@@ -23,6 +23,7 @@ type MatchResult = {
   gender: string;
   grade: string;
   similarity_score: number;
+  distance?: number;
   id: string;
 };
 
@@ -94,6 +95,15 @@ export default function IndividualMatch() {
   // Function to format similarity score as percentage
   const formatSimilarity = (score: number) => {
     return `${Math.round(score * 100)}%`;
+  };
+
+  // Function to format distance score
+  const formatDistance = (distance: number | undefined) => {
+    if (distance === undefined) return 'N/A';
+    // Lower distance means better match, so we convert to a percentage
+    // Assuming distance is between 0 and 1, where 0 is perfect match
+    const matchPercentage = Math.round((1 - distance) * 100);
+    return `${matchPercentage}%`;
   };
 
   return (
@@ -311,8 +321,8 @@ export default function IndividualMatch() {
                 <div key={match.id} className="card bg-base-100 rounded-lg p-5 border border-base-300">
                   <div className="flex justify-between items-center mb-3">
                     <span className="text-lg font-medium text-base-content">Match #{index + 1}</span>
-                    <span className="badge badge-primary">
-                      {formatSimilarity(match.similarity_score)}
+                    <span className="badge badge-success">
+                      Match Score: {formatDistance(match.distance)}
                     </span>
                   </div>
                   <div className="space-y-2">
