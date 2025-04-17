@@ -278,9 +278,10 @@ async def match_tour_guides_from_database(request: MatchingRequest):
         if not visiting_student.objects:
             raise HTTPException(status_code=404, detail="Visiting student not found")
         
-        # Log the visiting student object structure
-        logger.info(f"Visiting student object: {visiting_student.objects[0]}")
-        logger.info(f"Vector property: {visiting_student.objects[0].vector}")
+        # Log the visiting student object structure without vector
+        student_obj = visiting_student.objects[0]
+        student_data = {k: v for k, v in student_obj.properties.items() if k != 'vector'}
+        logger.info(f"Visiting student object (without vector): {student_data}")
         
         # Get the vector from the visiting student
         visiting_student_vector = visiting_student.objects[0].vector.get('default', [])
