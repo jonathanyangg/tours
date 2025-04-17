@@ -38,14 +38,16 @@ headers = {
 tour_guides_client = weaviate.connect_to_weaviate_cloud(
     cluster_url=weaviate_url,
     auth_credentials=Auth.api_key(weaviate_api_key),
-    headers=headers
+    headers=headers,
+    timeout_config=(10, 60)  # (connect timeout, read timeout) in seconds
 )
 
 # Connect to visiting students Weaviate instance
 visiting_students_client = weaviate.connect_to_weaviate_cloud(
     cluster_url=visiting_student_weaviate_url,
     auth_credentials=Auth.api_key(visiting_student_weaviate_api_key),
-    headers=headers
+    headers=headers,
+    timeout_config=(10, 60)  # (connect timeout, read timeout) in seconds
 )
 
 # Define the matching request models

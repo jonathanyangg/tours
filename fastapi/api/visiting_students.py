@@ -34,7 +34,8 @@ try:
     client = weaviate.connect_to_weaviate_cloud(
         cluster_url=weaviate_url,
         auth_credentials=Auth.api_key(weaviate_api_key),
-        headers=headers
+        headers=headers,
+        timeout_config=(10, 60)  # (connect timeout, read timeout) in seconds
     )
     logger.info("Successfully connected to Weaviate")
 except Exception as e:
