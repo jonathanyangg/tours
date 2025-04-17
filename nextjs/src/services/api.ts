@@ -89,6 +89,45 @@ export async function matchTourGuides(matchData: {
 }
 
 /**
+ * Match student with tour guides based on a visiting student from the database
+ * @param matchData The matching criteria
+ * @returns The matching results
+ */
+export async function matchTourGuidesFromDatabase(matchData: {
+  student_id: string;
+  gender: string;
+  grade: string;
+  residential_status?: string;
+  city_country?: string;
+  sports?: string;
+  extracurricular_activities?: string;
+  academic_interests?: string;
+  additional_information?: string;
+  race?: string;
+  time_period?: string;
+}) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/match-tour-guides-from-database`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(matchData),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || 'Failed to match tour guides from database');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error matching tour guides from database:', error);
+    throw error;
+  }
+}
+
+/**
  * Check the health of the backend
  * @returns The health status
  */

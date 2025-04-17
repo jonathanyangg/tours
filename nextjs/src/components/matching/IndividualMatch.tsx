@@ -71,7 +71,9 @@ export default function IndividualMatch() {
       setMessage('');
       setMatches([]);
       
+      console.log('Submitting individual match data:', formData);
       const result = await matchTourGuides(formData);
+      console.log('Individual match result:', result);
       
       if (result.status === 'success') {
         setMatches(result.matches);
@@ -85,6 +87,7 @@ export default function IndividualMatch() {
         setMessage('Unknown error occurred during matching');
       }
     } catch (error) {
+      console.error('Error in individual matching:', error);
       setStatus('error');
       setMessage(error instanceof Error ? error.message : 'Failed to match tour guides');
     } finally {

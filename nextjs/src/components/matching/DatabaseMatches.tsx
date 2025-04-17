@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { matchTourGuides } from '@/services/api';
+import { matchTourGuidesFromDatabase } from '@/services/api';
 
 type VisitingStudent = {
   name: string;
@@ -92,7 +92,7 @@ export default function DatabaseMatches() {
       
       console.log('Match data:', matchData);
 
-      const result = await matchTourGuides(matchData);
+      const result = await matchTourGuidesFromDatabase(matchData);
       console.log('Match result:', result);
       
       if (result.status === 'success') {

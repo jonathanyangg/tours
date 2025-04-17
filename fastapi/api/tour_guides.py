@@ -188,6 +188,85 @@ async def match_tour_guides(request: MatchingRequest):
     try:
         logger.info(f"Received matching request: {request}")
         
+        # Format text representation similar to how we do it for tour guides
+        text_fields = []
+        if request.residential_status:
+            text_fields.append(f"residential_status: {request.residential_status}")
+        if request.city_country:
+            text_fields.append(f"city_country: {request.city_country}")
+        if request.sports:
+            text_fields.append(f"sports: {request.sports}")
+        if request.extracurricular_activities:
+            text_fields.append(f"extracurricular_activities: {request.extracurricular_activities}")
+        if request.academic_interests:
+            text_fields.append(f"academic_interests: {request.academic_interests}")
+        if request.additional_information:
+            text_fields.append(f"additional_information: {request.additional_information}")
+        
+        text_representation = ", ".join(text_fields)
+        logger.info(f"Generated text representation: {text_representation}")
+        
+        # Get the TourGuide collection
+        tour_guide_collection = tour_guides_client.collections.get("TourGuide")
+        
+        # First filter by gender and grade
+        gender_first_char = request.gender[0].lower() if request.gender else ""
+        
+        # Build the filter conditions
+        gender_filter = Filter.by_property("gender").like(f"{gender_first_char}*")
+        grade_filter = Filter.by_property("grade").equal(request.grade)
+        
+        # Combine filters
+        combined_filter = gender_filter & grade_filter
+        
+        # Add residential status filter if provided
+        if request.residential_status:
+            residential_filter = Filter.by_property("residential_status").like(f"{request.residential_status[0].lower()}*")
+            combined_filter = combined_filter & residential_filter
+        
+        # Perform vector search with filters
+        response = tour_guide_collection.query.near_text(
+            query=text_representation,
+            limit=3,
+            filters=combined_filter
+        )
+        
+        # Process the results
+        matches = []
+        if response and hasattr(response, 'objects'):
+            for obj in response.objects:
+                matches.append({
+                    "student_id": obj.properties.get("student_id", ""),
+                    "gender": obj.properties.get("gender", ""),
+                    "grade": obj.properties.get("grade", ""),
+                    "residential_status": obj.properties.get("residential_status", ""),
+                    "similarity_score": obj.metadata.certainty,
+                    "id": obj.uuid
+                })
+        
+        if matches:
+            return {
+                "status": "success",
+                "message": f"Found {len(matches)} matching tour guides",
+                "matches": matches
+            }
+        else:
+            return {
+                "status": "warning",
+                "message": "No matching tour guides found with the same gender and grade",
+                "matches": []
+            }
+            
+    except Exception as e:
+        logger.error(f"Error matching tour guides: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/match-tour-guides-from-database")
+async def match_tour_guides_from_database(request: MatchingRequest):
+    """Find the best matching tour guides based on a visiting student from the database."""
+    try:
+        logger.info(f"Received database matching request: {request}")
+        
         # Get the visiting student's vector from the visiting student database
         visiting_student_collection = visiting_students_client.collections.get("VisitingStudent")
         visiting_student = visiting_student_collection.query.fetch_objects(
@@ -266,7 +345,6 @@ async def match_tour_guides(request: MatchingRequest):
     except Exception as e:
         logger.error(f"Error matching tour guides: {e}")
         raise HTTPException(status_code=500, detail=str(e))
-
 
 @router.get("/test-weaviate")
 async def test_weaviate_connection():
