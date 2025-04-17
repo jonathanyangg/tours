@@ -23,7 +23,6 @@ type MatchResult = {
   gender: string;
   grade: string;
   residential_status: string;
-  similarity_score: number;
   distance: number | null;
   id: string;
 };

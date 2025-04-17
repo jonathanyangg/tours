@@ -22,7 +22,7 @@ type MatchResult = {
   student_id: string;
   gender: string;
   grade: string;
-  similarity_score: number;
+  residential_status?: string;
   distance?: number;
   id: string;
 };

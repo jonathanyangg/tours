@@ -228,7 +228,8 @@ async def match_tour_guides(request: MatchingRequest):
         response = tour_guide_collection.query.near_text(
             query=text_representation,
             limit=3,
-            filters=combined_filter
+            filters=combined_filter,
+            return_metadata=MetadataQuery(distance=True)
         )
         
         # Process the results
@@ -240,7 +241,7 @@ async def match_tour_guides(request: MatchingRequest):
                     "gender": obj.properties.get("gender", ""),
                     "grade": obj.properties.get("grade", ""),
                     "residential_status": obj.properties.get("residential_status", ""),
-                    "similarity_score": obj.metadata.certainty,
+                    "distance": obj.metadata.distance if hasattr(obj.metadata, 'distance') else None,
                     "id": obj.uuid
                 })
         
