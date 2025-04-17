@@ -182,8 +182,8 @@ async def get_tour_guides():
         logger.error(f"Error retrieving student information: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.post("/match-tour-guides")
-async def match_tour_guides(request: MatchingRequest):
+@router.post("/match-tour-guides-manual")
+async def match_tour_guides_manual(request: MatchingRequest):
     """Find the best matching tour guides based on the provided criteria."""
     try:
         logger.info(f"Received matching request: {request}")

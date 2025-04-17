@@ -68,7 +68,7 @@ export async function matchTourGuides(matchData: {
   time_period?: string;
 }) {
   try {
-    const response = await fetch(`${API_BASE_URL}/match-tour-guides`, {
+    const response = await fetch(`${API_BASE_URL}/match-tour-guides-manual`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
