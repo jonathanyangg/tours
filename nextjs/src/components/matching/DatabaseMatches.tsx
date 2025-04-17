@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { matchTourGuides } from '@/services/api';
 
 type VisitingStudent = {
@@ -33,11 +33,10 @@ export default function DatabaseMatches() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedStudent, setSelectedStudent] = useState<VisitingStudent | null>(null);
-  const [matches, setMatches] = useState<MatchResult[]>([]);
-  const [showMatches, setShowMatches] = useState(false);
-  const [matchStatus, setMatchStatus] = useState<'success' | 'warning' | 'error' | ''>('');
-  const [matchMessage, setMatchMessage] = useState('');
+  const [studentMatches, setStudentMatches] = useState<Record<string, MatchResult[]>>({});
+  const [matchStatuses, setMatchStatuses] = useState<Record<string, 'success' | 'warning' | 'error' | ''>>({});
+  const [matchMessages, setMatchMessages] = useState<Record<string, string>>({});
+  const [expandedStudents, setExpandedStudents] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     fetchVisitingStudents();
@@ -97,26 +96,58 @@ export default function DatabaseMatches() {
       console.log('Match result:', result);
       
       if (result.status === 'success') {
-        setSelectedStudent(student);
-        setMatches(result.matches.slice(0, 3)); // Get top 3 matches
-        setMatchStatus('success');
-        setMatchMessage(result.message);
-        setShowMatches(true);
+        setStudentMatches(prev => ({
+          ...prev,
+          [student.email]: result.matches.slice(0, 3)
+        }));
+        setMatchStatuses(prev => ({
+          ...prev,
+          [student.email]: 'success'
+        }));
+        setMatchMessages(prev => ({
+          ...prev,
+          [student.email]: result.message
+        }));
+        setExpandedStudents(prev => new Set([...prev, student.email]));
       } else {
-        setMatchStatus('warning');
-        setMatchMessage(result.message);
-        setShowMatches(true);
+        setMatchStatuses(prev => ({
+          ...prev,
+          [student.email]: 'warning'
+        }));
+        setMatchMessages(prev => ({
+          ...prev,
+          [student.email]: result.message
+        }));
+        setExpandedStudents(prev => new Set([...prev, student.email]));
       }
     } catch (err) {
       console.error('Error matching student:', err);
-      setMatchStatus('error');
-      setMatchMessage(err instanceof Error ? err.message : 'Unknown error');
-      setShowMatches(true);
+      setMatchStatuses(prev => ({
+        ...prev,
+        [student.email]: 'error'
+      }));
+      setMatchMessages(prev => ({
+        ...prev,
+        [student.email]: err instanceof Error ? err.message : 'Unknown error'
+      }));
+      setExpandedStudents(prev => new Set([...prev, student.email]));
     }
   };
 
   const formatSimilarity = (score: number) => {
     return `${Math.round(score * 100)}%`;
+  };
+
+  const toggleExpanded = (studentEmail: string) => {
+    setExpandedStudents(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(studentEmail)) {
+        newSet.delete(studentEmail);
+      } else {
+        newSet.add(studentEmail);
+      }
+      return newSet;
+    });
   };
 
   const filteredStudents = visitingStudents.filter(student => {
@@ -154,40 +185,35 @@ export default function DatabaseMatches() {
               </button>
             </div>
           </div>
-          
-          <div className="card bg-base-100 p-4 rounded-lg border border-base-300 shadow-sm">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="font-normal text-base-content">Recent Visitors</h3>
-              <span className="badge badge-primary">{filteredStudents.length} pending</span>
+
+          {loading ? (
+            <div className="flex justify-center items-center h-64">
+              <span className="loading loading-spinner loading-lg text-primary"></span>
             </div>
-            
-            {loading ? (
-              <div className="flex justify-center items-center h-64">
-                <span className="loading loading-spinner loading-lg text-primary"></span>
-              </div>
-            ) : error ? (
-              <div className="p-4 bg-error/20 text-error-content rounded-md">
-                <h3 className="font-medium mb-2">Error</h3>
-                <p>{error}</p>
-              </div>
-            ) : filteredStudents.length === 0 ? (
-              <div className="p-4 bg-base-100 text-base-content/70 rounded-md">
-                <p>No visiting students found in the database.</p>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="table w-full">
-                  <thead>
-                    <tr className="bg-white">
-                      <th className="text-base-content/70 font-normal">Name</th>
-                      <th className="text-base-content/70 font-normal">Email</th>
-                      <th className="text-base-content/70 font-normal">Tour Date</th>
-                      <th className="text-base-content/70 font-normal">Action</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredStudents.map((student, index) => (
-                      <tr key={index} className="hover:bg-base-200 transition-all duration-200 hover:scale-[1.01] hover:shadow-sm">
+          ) : error ? (
+            <div className="p-4 bg-error/20 text-error-content rounded-md">
+              <h3 className="font-medium mb-2">Error</h3>
+              <p>{error}</p>
+            </div>
+          ) : filteredStudents.length === 0 ? (
+            <div className="p-4 bg-base-100 text-base-content/70 rounded-md">
+              <p>No visiting students found in the database.</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="table w-full">
+                <thead>
+                  <tr className="bg-white">
+                    <th className="text-base-content/70 font-normal">Name</th>
+                    <th className="text-base-content/70 font-normal">Email</th>
+                    <th className="text-base-content/70 font-normal">Tour Date</th>
+                    <th className="text-base-content/70 font-normal">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredStudents.map((student, index) => (
+                    <React.Fragment key={index}>
+                      <tr className="hover:bg-base-200 transition-all duration-200 hover:scale-[1.01] hover:shadow-sm">
                         <td className="text-base-content">{student.name}</td>
                         <td className="text-base-content/70">{student.email}</td>
                         <td className="text-base-content/70">{new Date(student.tour_datetime).toLocaleString()}</td>
@@ -200,12 +226,54 @@ export default function DatabaseMatches() {
                           </button>
                         </td>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
+                      {expandedStudents.has(student.email) && (
+                        <tr>
+                          <td colSpan={4} className="p-4 bg-base-100">
+                            {matchStatuses[student.email] === 'error' ? (
+                              <div className="p-4 bg-error/20 text-error-content rounded-md">
+                                <p>{matchMessages[student.email]}</p>
+                              </div>
+                            ) : matchStatuses[student.email] === 'warning' ? (
+                              <div className="p-4 bg-warning/20 text-warning-content rounded-md">
+                                <p>{matchMessages[student.email]}</p>
+                              </div>
+                            ) : (
+                              <div className="space-y-4">
+                                {studentMatches[student.email]?.map((match, matchIndex) => (
+                                  <div key={match.id} className="p-4 bg-base-100 rounded-lg border border-base-300">
+                                    <div className="flex justify-between items-start">
+                                      <div>
+                                        <h4 className="font-medium text-base-content">Tour Guide {matchIndex + 1}</h4>
+                                        <p className="text-base-content/70">ID: {match.student_id}</p>
+                                        <p className="text-base-content/70">Grade: {match.grade}</p>
+                                        <p className="text-base-content/70">Gender: {match.gender}</p>
+                                        <p className="text-base-content/70">Residential Status: {match.residential_status}</p>
+                                      </div>
+                                      <div className="text-right">
+                                        <p className="text-success font-medium">Match Score: {formatSimilarity(1 - (match.distance || 0))}</p>
+                                      </div>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                            <div className="mt-2 flex justify-end">
+                              <button 
+                                className="btn btn-ghost btn-sm"
+                                onClick={() => toggleExpanded(student.email)}
+                              >
+                                {expandedStudents.has(student.email) ? 'Hide Matches' : 'Show Matches'}
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
           
           <div className="flex justify-end">
             <button 
@@ -217,57 +285,6 @@ export default function DatabaseMatches() {
           </div>
         </div>
       </div>
-
-      {/* Matches Modal */}
-      {showMatches && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-medium text-base-content">
-                {selectedStudent ? `Matches for ${selectedStudent.name}` : 'Matching Results'}
-              </h3>
-              <button 
-                className="btn btn-ghost btn-sm"
-                onClick={() => setShowMatches(false)}
-              >
-                ✕
-              </button>
-            </div>
-
-            {matchStatus === 'error' ? (
-              <div className="p-4 bg-error/20 text-error-content rounded-md">
-                <p>{matchMessage}</p>
-              </div>
-            ) : matchStatus === 'warning' ? (
-              <div className="p-4 bg-warning/20 text-warning-content rounded-md">
-                <p>{matchMessage}</p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {matches.map((match, index) => (
-                  <div key={match.id} className="p-4 bg-base-100 rounded-lg border border-base-300">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h4 className="font-medium text-base-content">Tour Guide {index + 1}</h4>
-                        <p className="text-base-content/70">ID: {match.student_id}</p>
-                        <p className="text-base-content/70">Grade: {match.grade}</p>
-                        <p className="text-base-content/70">Gender: {match.gender}</p>
-                        <p className="text-base-content/70">Residential Status: {match.residential_status}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-success font-medium">Match Score: {formatSimilarity(match.similarity_score)}</p>
-                        {match.distance !== null && (
-                          <p className="text-base-content/70">Distance: {formatSimilarity(1 - match.distance)}</p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
     </div>
   );
 } 

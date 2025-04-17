@@ -4,10 +4,12 @@ from typing import Optional
 import weaviate
 from weaviate.classes.init import Auth
 from weaviate.collections.classes.config import DataType
+from weaviate.collections.classes.filters import Filter
 import os
 from dotenv import load_dotenv
 import logging
 import json
+import weaviate.collections.classes.config as wvc
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -56,92 +58,124 @@ class VisitingStudent(BaseModel):
 def create_visiting_student_schema():
     """Create the schema for visiting students if it doesn't exist."""
     try:
-        # Check if the schema exists
-        collections = client.collections.list_all()
-        logger.info(f"Available collections: {collections}")
+        # List existing collections (schemas)
+        existing_collections = client.collections.list_all()
+        logger.info(f"Existing collections: {existing_collections}")
         
-        if "VisitingStudent" in collections:
-            logger.info("Deleting existing VisitingStudent collection")
-            client.collections.delete("VisitingStudent")
-            logger.info("Deleted VisitingStudent collection")
-
-        logger.info("Creating VisitingStudent schema")
-        # Create the schema
-        client.collections.create(
-            name="VisitingStudent",
-            description="A collection of visiting students who have registered for campus tours",
-            properties=[
-                {
-                    "name": "name",
-                    "data_type": DataType.TEXT,
-                    "description": "The full name of the visiting student",
-                },
-                {
-                    "name": "email",
-                    "data_type": DataType.TEXT,
-                    "description": "The email address of the visiting student",
-                },
-                {
-                    "name": "gender",
-                    "data_type": DataType.TEXT,
-                    "description": "The gender of the visiting student",
-                },
-                {
-                    "name": "grade",
-                    "data_type": DataType.TEXT,
-                    "description": "The grade level of the visiting student",
-                },
-                {
-                    "name": "residential_status",
-                    "data_type": DataType.TEXT,
-                    "description": "The residential status of the visiting student",
-                },
-                {
-                    "name": "city_country",
-                    "data_type": DataType.TEXT,
-                    "description": "The city and country of the visiting student",
-                },
-                {
-                    "name": "sports",
-                    "data_type": DataType.TEXT,
-                    "description": "The sports interests of the visiting student",
-                },
-                {
-                    "name": "extracurricular_activities",
-                    "data_type": DataType.TEXT,
-                    "description": "The extracurricular activities of the visiting student",
-                },
-                {
-                    "name": "academic_interests",
-                    "data_type": DataType.TEXT,
-                    "description": "The academic interests of the visiting student",
-                },
-                {
-                    "name": "additional_information",
-                    "data_type": DataType.TEXT,
-                    "description": "Additional information about the visiting student",
-                },
-                {
-                    "name": "race",
-                    "data_type": DataType.TEXT,
-                    "description": "The race/ethnicity of the visiting student",
-                },
-                {
-                    "name": "tour_datetime",
-                    "data_type": DataType.TEXT,
-                    "description": "The scheduled date and time of the tour",
-                },
-                {
-                    "name": "text_representation",
-                    "data_type": DataType.TEXT,
-                    "description": "A text representation of the student's information for vector search",
-                }
-            ]
-        )
-        logger.info("Created VisitingStudent schema")
+        if "VisitingStudent" not in existing_collections:
+            # Configure the OpenAI vectorizer
+            vectorizer_config = wvc.Configure.Vectorizer.text2vec_openai(
+                model="text-embedding-3-large",
+                model_version="1.0.0",
+                dimensions=3072
+            )
+            logger.info(f"Created vectorizer config: {vectorizer_config}")
+            
+            client.collections.create(
+                name="VisitingStudent",
+                description="A visiting student with their information and vector embedding",
+                properties=[
+                    {
+                        "name": "name",
+                        "data_type": DataType.TEXT,
+                        "description": "The name of the visiting student",
+                    },
+                    {
+                        "name": "email",
+                        "data_type": DataType.TEXT,
+                        "description": "The email of the visiting student",
+                    },
+                    {
+                        "name": "gender",
+                        "data_type": DataType.TEXT,
+                        "description": "The gender of the visiting student",
+                    },
+                    {
+                        "name": "grade",
+                        "data_type": DataType.TEXT,
+                        "description": "The grade of the visiting student",
+                    },
+                    {
+                        "name": "residential_status",
+                        "data_type": DataType.TEXT,
+                        "description": "The residential status of the visiting student",
+                    },
+                    {
+                        "name": "city_country",
+                        "data_type": DataType.TEXT,
+                        "description": "The city and country of the visiting student",
+                    },
+                    {
+                        "name": "sports",
+                        "data_type": DataType.TEXT,
+                        "description": "The sports interests of the visiting student",
+                    },
+                    {
+                        "name": "extracurricular_activities",
+                        "data_type": DataType.TEXT,
+                        "description": "The extracurricular activities of the visiting student",
+                    },
+                    {
+                        "name": "academic_interests",
+                        "data_type": DataType.TEXT,
+                        "description": "The academic interests of the visiting student",
+                    },
+                    {
+                        "name": "additional_information",
+                        "data_type": DataType.TEXT,
+                        "description": "Additional information about the visiting student",
+                    },
+                    {
+                        "name": "race",
+                        "data_type": DataType.TEXT,
+                        "description": "The race/ethnicity of the visiting student",
+                    },
+                    {
+                        "name": "tour_datetime",
+                        "data_type": DataType.TEXT,
+                        "description": "The scheduled date and time of the tour",
+                    },
+                    {
+                        "name": "text_representation",
+                        "data_type": DataType.TEXT,
+                        "description": "A text representation of the student's information for vector search",
+                    }
+                ],
+                vectorizer_config=vectorizer_config
+            )
+            logger.info("Created VisitingStudent schema with vectorizer configuration")
+            
+            # Verify the schema was created correctly
+            schema = client.collections.get("VisitingStudent").config.get()
+            logger.info(f"Schema configuration: {schema}")
+        else:
+            logger.info("VisitingStudent schema already exists")
     except Exception as e:
         logger.error(f"Error creating VisitingStudent schema: {e}")
         raise
+
+def delete_visiting_student_schema():
+    """Delete the visiting student schema if it exists."""
+    try:
+        if "VisitingStudent" in client.collections.list_all():
+            client.collections.delete("VisitingStudent")
+            logger.info("Deleted existing VisitingStudent schema")
+            return True
+        return False
+    except Exception as e:
+        logger.error(f"Error deleting VisitingStudent schema: {e}")
+        raise
+
+@router.delete("/visiting-students/schema")
+async def delete_schema():
+    """Endpoint to delete the visiting student schema. Use with caution as this will delete all visiting student data."""
+    try:
+        deleted = delete_visiting_student_schema()
+        if deleted:
+            return {"status": "success", "message": "VisitingStudent schema deleted successfully"}
+        return {"status": "not_found", "message": "VisitingStudent schema does not exist"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/visiting-students")
 async def create_visiting_student(student: VisitingStudent):
@@ -172,6 +206,12 @@ async def create_visiting_student(student: VisitingStudent):
         text_representation = ", ".join(text_fields)
         logger.info(f"Generated text representation: {text_representation}")
 
+        # Log the generated text representation
+        logger.info(f"Generated text representation: {text_representation}")
+        
+        # Log that vector was generated
+        logger.info("Vector property generated successfully")
+        
         # Get the VisitingStudent collection
         visiting_student_collection = client.collections.get("VisitingStudent")
         logger.info("Retrieved VisitingStudent collection")
@@ -192,12 +232,42 @@ async def create_visiting_student(student: VisitingStudent):
             "tour_datetime": student.tour_datetime,
             "text_representation": text_representation
         }
+        logger.info(f"Prepared student data for insertion: {json.dumps(student_data, indent=2)}")
 
         # Insert the student into Weaviate
         logger.info("Inserting student data into Weaviate")
         result = visiting_student_collection.data.insert(student_data)
         logger.info(f"Student inserted successfully with ID: {result}")
 
+        # Verify the vector was generated
+        logger.info("Verifying vector generation...")
+        inserted_student = visiting_student_collection.query.fetch_objects(
+            filters=Filter.by_property("email").equal(student.email),
+            limit=1,
+            include_vector=True
+        )
+        
+        if inserted_student.objects:
+            student_obj = inserted_student.objects[0]
+            logger.info(f"Retrieved inserted student object: {student_obj}")
+            logger.info(f"Vector property: {student_obj.vector}")
+            if student_obj.vector:
+                logger.info("Vector was successfully generated")
+                # Log all available vector properties
+                logger.info(f"Available vector properties: {list(student_obj.vector.keys())}")
+                if "default" in student_obj.vector:
+                    logger.info(f"Vector length: {len(student_obj.vector['default'])}")
+                    logger.info("Vector was successfully generated and stored")
+                else:
+                    logger.warning("default vector not found in vector property")
+            else:
+                logger.error("Vector is empty or not generated")
+        else:
+            logger.error("Could not retrieve inserted student")
+
+        # Log the inserted student object
+        logger.info("Vector property generated successfully")
+        
         return {
             "status": "success",
             "message": "Visiting student registered successfully",

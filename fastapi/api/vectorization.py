@@ -60,7 +60,7 @@ def create_schema():
                 name="text_vector",
                 source_properties=["text_representation"],
                 model="text-embedding-3-large",
-                dimensions=1024
+                dimensions=3072
             )
             
             client.collections.create(

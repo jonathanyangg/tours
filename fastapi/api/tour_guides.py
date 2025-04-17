@@ -19,6 +19,8 @@ from weaviate.classes.query import MetadataQuery
 openai_key = os.environ.get("OPENAI_API_KEY")
 weaviate_url = os.environ["WEAVIATE_URL"]
 weaviate_api_key = os.environ["WEAVIATE_API_KEY"]
+visiting_student_weaviate_url = os.environ["VISITING_STUDENT_WEAVIATE_URL"]
+visiting_student_weaviate_api_key = os.environ["VISITING_STUDENT_WEAVIATE_API_KEY"]
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -32,12 +34,19 @@ headers = {
     "X-OpenAI-Api-Key": openai_key,
 }
 
+# Connect to tour guides Weaviate instance
+tour_guides_client = weaviate.connect_to_weaviate_cloud(
+    cluster_url=weaviate_url,
+    auth_credentials=Auth.api_key(weaviate_api_key),
+    headers=headers
+)
 
-client = weaviate.connect_to_weaviate_cloud(
-        cluster_url=weaviate_url,
-        auth_credentials=Auth.api_key(weaviate_api_key),
-        headers=headers
-    )
+# Connect to visiting students Weaviate instance
+visiting_students_client = weaviate.connect_to_weaviate_cloud(
+    cluster_url=visiting_student_weaviate_url,
+    auth_credentials=Auth.api_key(visiting_student_weaviate_api_key),
+    headers=headers
+)
 
 # Define the matching request models
 class MatchingRequest(BaseModel):
@@ -150,7 +159,7 @@ async def get_tour_guides():
     """Retrieve student information from Weaviate."""
     try:
         # Get the collection
-        tour_guide_collection = client.collections.get("TourGuide")
+        tour_guide_collection = tour_guides_client.collections.get("TourGuide")
         
         # Using the newer API with proper method chain
         query_result = tour_guide_collection.query.fetch_objects(
@@ -179,32 +188,30 @@ async def match_tour_guides(request: MatchingRequest):
     try:
         logger.info(f"Received matching request: {request}")
         
-        # Format text representation similar to how we do it for tour guides
-        text_fields = []
-        if request.residential_status:
-            text_fields.append(f"residential status: {request.residential_status}")
-        if request.city_country:
-            text_fields.append(f"city country: {request.city_country}")
-        if request.sports:
-            text_fields.append(f"sports: {request.sports}")
-        if request.extracurricular_activities:
-            text_fields.append(f"extracurricular activities: {request.extracurricular_activities}")
-        if request.academic_interests:
-            text_fields.append(f"academic interests: {request.academic_interests}")
-        if request.additional_information:
-            text_fields.append(f"additional information: {request.additional_information}")
+        # Get the visiting student's vector from the visiting student database
+        visiting_student_collection = visiting_students_client.collections.get("VisitingStudent")
+        visiting_student = visiting_student_collection.query.fetch_objects(
+            filters=Filter.by_property("email").equal(request.student_id),
+            limit=1,
+            include_vector=True  # Explicitly request the vector
+        )
         
-        text_representation = ", ".join(text_fields)
-        logger.info(f"Generated text representation: {text_representation}")
+        if not visiting_student.objects:
+            raise HTTPException(status_code=404, detail="Visiting student not found")
         
-        # Get the TourGuide collection
-        tour_guide_collection = client.collections.get("TourGuide")
+        # Log the visiting student object structure
+        logger.info(f"Visiting student object: {visiting_student.objects[0]}")
+        logger.info(f"Vector property: {visiting_student.objects[0].vector}")
+        
+        # Get the vector from the visiting student
+        visiting_student_vector = visiting_student.objects[0].vector.get('default', [])
+        logger.info(f"Retrieved vector with length: {len(visiting_student_vector)}")
+        
+        # Get the TourGuide collection from the tour guides database
+        tour_guide_collection = tour_guides_client.collections.get("TourGuide")
         
         # First filter by gender and grade
         gender_first_char = request.gender[0].lower() if request.gender else ""
-        
-        # Create filters for gender and grade using the correct syntax for v4.13.2
-        from weaviate.collections.classes.filters import Filter
         
         # Build the filter conditions
         gender_filter = Filter.by_property("gender").like(f"{gender_first_char}*")
@@ -218,9 +225,13 @@ async def match_tour_guides(request: MatchingRequest):
             residential_filter = Filter.by_property("residential_status").like(f"{request.residential_status[0].lower()}*")
             combined_filter = combined_filter & residential_filter
         
-        # Perform vector search with filters
-        response = tour_guide_collection.query.near_text(
-            query=text_representation,
+        # Log the search parameters
+        logger.info(f"Searching with vector of length: {len(visiting_student_vector) if visiting_student_vector else 'None'}")
+        logger.info(f"Using filters: gender={gender_first_char}*, grade={request.grade}")
+        
+        # Perform vector search with filters using the visiting student's vector
+        response = tour_guide_collection.query.near_vector(
+            near_vector=visiting_student_vector,  # Use the vector values directly
             limit=6,
             filters=combined_filter,
             return_metadata=MetadataQuery(distance=True)
@@ -235,7 +246,6 @@ async def match_tour_guides(request: MatchingRequest):
                     "gender": obj.properties.get("gender", ""),
                     "grade": obj.properties.get("grade", ""),
                     "residential_status": obj.properties.get("residential_status", ""),
-                    "similarity_score": obj.metadata.certainty,
                     "distance": obj.metadata.distance if hasattr(obj.metadata, 'distance') else None,
                     "id": obj.uuid
                 })
@@ -263,7 +273,7 @@ async def test_weaviate_connection():
     """Test the connection to Weaviate and return the schema."""
     try:
         # Try to get the collections to check connection
-        status = client.is_ready()
+        status = tour_guides_client.is_ready()
         return {
             "status": status, 
             "message": "Weaviate connection successful",
