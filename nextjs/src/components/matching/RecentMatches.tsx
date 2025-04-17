@@ -27,6 +27,7 @@ export default function RecentMatches() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [unmatchingStudent, setUnmatchingStudent] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     fetchMatchedStudents();
@@ -46,6 +47,19 @@ export default function RecentMatches() {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await fetchMatchedStudents();
+      toast.success('Recent matches refreshed');
+    } catch (err) {
+      console.error('Error refreshing matched students:', err);
+      toast.error('Failed to refresh matches');
+    } finally {
+      setRefreshing(false);
     }
   };
 
@@ -75,7 +89,28 @@ export default function RecentMatches() {
   return (
     <div className="card bg-white shadow-md border border-base-300">
       <div className="p-6">
-        <h2 className="text-xl font-normal text-base-content mb-6">Recent Matches</h2>
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-xl font-normal text-base-content">Recent Matches</h2>
+          <button 
+            className="btn btn-sm btn-primary"
+            onClick={handleRefresh}
+            disabled={refreshing}
+          >
+            {refreshing ? (
+              <>
+                <span className="loading loading-spinner loading-xs mr-2"></span>
+                Refreshing...
+              </>
+            ) : (
+              <>
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                Refresh
+              </>
+            )}
+          </button>
+        </div>
         {loading ? (
           <div className="flex justify-center items-center h-64">
             <span className="loading loading-spinner loading-lg text-primary"></span>

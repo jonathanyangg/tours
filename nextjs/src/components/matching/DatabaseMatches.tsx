@@ -38,6 +38,7 @@ export default function DatabaseMatches() {
   const [matchMessages, setMatchMessages] = useState<Record<string, string>>({});
   const [expandedStudents, setExpandedStudents] = useState<Set<string>>(new Set());
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     fetchVisitingStudents();
@@ -77,6 +78,19 @@ export default function DatabaseMatches() {
       setVisitingStudents([]); // Clear the students list on error
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await fetchVisitingStudents();
+      toast.success('Unmatched students refreshed');
+    } catch (err) {
+      console.error('Error refreshing unmatched students:', err);
+      toast.error('Failed to refresh unmatched students');
+    } finally {
+      setRefreshing(false);
     }
   };
 
@@ -244,7 +258,28 @@ export default function DatabaseMatches() {
   return (
     <div className="card bg-white shadow-md border border-base-300 mb-8">
       <div className="p-6">
-        <h2 className="text-xl font-normal text-base-content mb-2">Find Matches from Database</h2>
+        <div className="flex justify-between items-center mb-2">
+          <h2 className="text-xl font-normal text-base-content">Find Matches from Database</h2>
+          <button 
+            className="btn btn-sm btn-primary"
+            onClick={handleRefresh}
+            disabled={refreshing}
+          >
+            {refreshing ? (
+              <>
+                <span className="loading loading-spinner loading-xs mr-2"></span>
+                Refreshing...
+              </>
+            ) : (
+              <>
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                Refresh
+              </>
+            )}
+          </button>
+        </div>
         <p className="text-sm text-base-content/70 mb-6">Connect to the visiting students database and find optimal tour guide matches.</p>
         
         <div className="flex flex-col gap-6">
@@ -300,7 +335,7 @@ export default function DatabaseMatches() {
                         <td className="text-base-content/70">{student.email}</td>
                         <td className="text-base-content/70">{new Date(student.tour_datetime).toLocaleString()}</td>
                         <td>
-                          <div className="flex space-x-2">
+                          <div className="flex justify-between">
                             <button 
                               className="btn btn-sm btn-success transition-all duration-200 hover:scale-103"
                               onClick={() => handleMatch(student)}
@@ -308,7 +343,7 @@ export default function DatabaseMatches() {
                               Match
                             </button>
                             <button
-                              className="btn btn-sm btn-danger"
+                              className="btn btn-sm bg-red-500 hover:bg-red-600 text-white"
                               onClick={() => handleDeleteStudent(student.email)}
                               disabled={isDeleting === student.email}
                             >
