@@ -87,12 +87,12 @@ export default function RecentMatches() {
   };
 
   return (
-    <div className="card bg-white shadow-md border border-base-300">
+    <div className="card bg-white shadow-md border border-base-300 mb-8">
       <div className="p-6">
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex justify-between items-center mb-2">
           <h2 className="text-xl font-normal text-base-content">Recent Matches</h2>
           <button 
-            className="btn btn-sm btn-primary"
+            className="btn btn-primary"
             onClick={handleRefresh}
             disabled={refreshing}
           >
@@ -143,14 +143,14 @@ export default function RecentMatches() {
                       {student.matched_tour_guide_name || student.matched_tour_guide}
                     </td>
                     <td className="text-base-content/70">{new Date(student.tour_datetime).toLocaleString()}</td>
-                    <td><button className="btn btn-sm btn-success">Confirmed</button></td>
+                    <td><button className="btn btn-success">Confirmed</button></td>
                     <td>
                       <button
-                        className="btn btn-sm btn-warning"
+                        className="btn bg-red-500 hover:bg-red-600 text-white"
                         onClick={() => handleUnmatchStudent(student.email)}
                         disabled={unmatchingStudent === student.email}
                       >
-                        {unmatchingStudent === student.email ? 'Unmatching...' : 'Move to Unmatched'}
+                        {unmatchingStudent === student.email ? 'Moving...' : 'Unmatch'}
                       </button>
                     </td>
                   </tr>

@@ -13,9 +13,9 @@ export default function Home() {
       {/* Main Content */}
       <main className="p-8 flex-1 max-w-7xl mx-auto w-full">
         <Hero />
-        <IndividualMatch />
         <DatabaseMatches />
         <RecentMatches />
+        <IndividualMatch />
         <Footer />
       </main>
     </div>

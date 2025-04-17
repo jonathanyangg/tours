@@ -3,6 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import { matchTourGuidesFromDatabase, updateStudentMatch } from '@/services/api';
 import { toast } from 'react-hot-toast';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
 
 type VisitingStudent = {
   name: string;
@@ -33,6 +35,9 @@ export default function DatabaseMatches() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchType, setSearchType] = useState<'text' | 'date'>('text');
+  const [startDate, setStartDate] = useState<Date | null>(null);
+  const [endDate, setEndDate] = useState<Date | null>(null);
   const [studentMatches, setStudentMatches] = useState<Record<string, MatchResult[]>>({});
   const [matchStatuses, setMatchStatuses] = useState<Record<string, 'success' | 'warning' | 'error' | ''>>({});
   const [matchMessages, setMatchMessages] = useState<Record<string, string>>({});
@@ -43,6 +48,23 @@ export default function DatabaseMatches() {
   useEffect(() => {
     fetchVisitingStudents();
   }, []);
+
+  // Helper function to check if a date string is within the selected range
+  const isInDateRange = (dateString: string): boolean => {
+    if (!startDate && !endDate) return true;
+    
+    const tourDate = new Date(dateString);
+    
+    if (startDate && endDate) {
+      return tourDate >= startDate && tourDate <= endDate;
+    } else if (startDate) {
+      return tourDate >= startDate;
+    } else if (endDate) {
+      return tourDate <= endDate;
+    }
+    
+    return true;
+  };
 
   const fetchVisitingStudents = async () => {
     try {
@@ -246,13 +268,32 @@ export default function DatabaseMatches() {
     }
   };
 
+  // Filter students based on search query and date range
   const filteredStudents = visitingStudents.filter(student => {
-    const searchLower = searchQuery.toLowerCase();
-    return (
-      student.name.toLowerCase().includes(searchLower) ||
-      student.email.toLowerCase().includes(searchLower) ||
-      student.tour_datetime.toLowerCase().includes(searchLower)
-    );
+    // If both search query and date range are empty, show all students
+    if (!searchQuery.trim() && !startDate && !endDate) return true;
+    
+    // Text search (name or email)
+    if (searchType === 'text' && searchQuery.trim()) {
+      const query = searchQuery.toLowerCase().trim();
+      const matchesText = 
+        student.name.toLowerCase().includes(query) ||
+        student.email.toLowerCase().includes(query);
+      
+      // If date range is also set, check both conditions
+      if (startDate || endDate) {
+        return matchesText && isInDateRange(student.tour_datetime);
+      }
+      
+      return matchesText;
+    }
+    
+    // Date range search
+    if (searchType === 'date' && (startDate || endDate)) {
+      return isInDateRange(student.tour_datetime);
+    }
+    
+    return true;
   });
 
   return (
@@ -261,7 +302,7 @@ export default function DatabaseMatches() {
         <div className="flex justify-between items-center mb-2">
           <h2 className="text-xl font-normal text-base-content">Find Matches from Database</h2>
           <button 
-            className="btn btn-sm btn-primary"
+            className="btn btn-primary"
             onClick={handleRefresh}
             disabled={refreshing}
           >
@@ -287,19 +328,73 @@ export default function DatabaseMatches() {
             <label className="label">
               <span className="label-text text-base-content/80 font-normal">Search Criteria</span>
             </label>
-            <div className="flex gap-2">
-              <input 
-                type="text" 
-                placeholder="Search by name, email, or tour date..." 
-                className="input input-bordered flex-1 bg-base-100 border-base-300 text-base-content placeholder:text-base-content/50"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-              <button className="btn btn-primary transition-all duration-200 hover:scale-103">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-              </button>
+            <div className="flex flex-col gap-4">
+              <div className="flex gap-2">
+                <div className="tabs tabs-boxed">
+                  <button 
+                    className={`tab ${searchType === 'text' ? 'tab-active' : ''}`}
+                    onClick={() => setSearchType('text')}
+                  >
+                    Name/Email
+                  </button>
+                  <button 
+                    className={`tab ${searchType === 'date' ? 'tab-active' : ''}`}
+                    onClick={() => setSearchType('date')}
+                  >
+                    Date Range
+                  </button>
+                </div>
+              </div>
+              
+              {searchType === 'text' ? (
+                <div className="flex gap-2">
+                  <input 
+                    type="text" 
+                    placeholder="Search by name or email..." 
+                    className="input input-bordered flex-1 bg-base-100 border-base-300 text-base-content placeholder:text-base-content/50"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1 flex-1">
+                    <DatePicker
+                      selected={startDate}
+                      onChange={(date: Date | null) => setStartDate(date)}
+                      selectsStart
+                      startDate={startDate}
+                      endDate={endDate}
+                      className="input input-bordered bg-base-100 border-base-300 text-base-content flex-1"
+                      placeholderText="Start date"
+                      dateFormat="MM/dd/yy"
+                    />
+                    <span className="text-base-content/50 px-1">to</span>
+                    <div className="flex items-center gap-2">
+                      <DatePicker
+                        selected={endDate}
+                        onChange={(date: Date | null) => setEndDate(date)}
+                        selectsEnd
+                        startDate={startDate}
+                        endDate={endDate}
+                        minDate={startDate || undefined}
+                        className="input input-bordered bg-base-100 border-base-300 text-base-content flex-1"
+                        placeholderText="End date"
+                        dateFormat="MM/dd/yy"
+                      />
+                      <button 
+                        className="btn btn-primary"
+                        onClick={() => {
+                          setStartDate(null);
+                          setEndDate(null);
+                        }}
+                      >
+                        Clear
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -337,13 +432,13 @@ export default function DatabaseMatches() {
                         <td>
                           <div className="flex justify-between">
                             <button 
-                              className="btn btn-sm btn-success transition-all duration-200 hover:scale-103"
+                              className="btn btn-success"
                               onClick={() => handleMatch(student)}
                             >
                               Match
                             </button>
                             <button
-                              className="btn btn-sm bg-red-500 hover:bg-red-600 text-white"
+                              className="btn bg-red-500 hover:bg-red-600 text-white"
                               onClick={() => handleDeleteStudent(student.email)}
                               disabled={isDeleting === student.email}
                             >
@@ -378,7 +473,7 @@ export default function DatabaseMatches() {
                                       <div className="text-right space-y-2">
                                         <p className="text-success font-medium">Match Score: {formatSimilarity(1 - (match.distance || 0))}</p>
                                         <button
-                                          className="btn btn-sm btn-primary"
+                                          className="btn btn-primary"
                                           onClick={() => handleChooseMatch(student.email, match.id)}
                                         >
                                           Choose Match
@@ -391,7 +486,7 @@ export default function DatabaseMatches() {
                             )}
                             <div className="mt-2 flex justify-end">
                               <button 
-                                className="btn btn-ghost btn-sm"
+                                className="btn btn-ghost"
                                 onClick={() => toggleExpanded(student.email)}
                               >
                                 {expandedStudents.has(student.email) ? 'Hide Matches' : 'Show Matches'}
@@ -409,10 +504,10 @@ export default function DatabaseMatches() {
           
           <div className="flex justify-end">
             <button 
-              className="btn btn-primary transition-all duration-200 hover:scale-103"
+              className="btn btn-primary"
               onClick={() => filteredStudents.forEach(handleMatch)}
             >
-              Match All Pending
+              Match All
             </button>
           </div>
         </div>
