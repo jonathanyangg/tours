@@ -296,6 +296,54 @@ export default function DatabaseMatches() {
     return true;
   });
 
+  const handleMatchAll = async () => {
+    try {
+      // Process each student sequentially to avoid overwhelming the server
+      for (const student of filteredStudents) {
+        try {
+          // First, get the matches for the student
+          const matchData = {
+            student_id: student.email,
+            gender: student.gender,
+            grade: student.grade,
+            residential_status: student.residential_status,
+            city_country: student.city_country,
+            sports: student.sports,
+            extracurricular_activities: student.extracurricular_activities,
+            academic_interests: student.academic_interests,
+            additional_information: student.additional_information,
+            race: student.race,
+            time_period: student.tour_datetime
+          };
+
+          const result = await matchTourGuidesFromDatabase(matchData);
+          
+          if (result.status === 'success' && result.matches.length > 0) {
+            // Get the best match (first one has the highest score)
+            const bestMatch = result.matches[0];
+            
+            // Automatically choose the best match
+            await handleChooseMatch(student.email, bestMatch.id);
+            
+            // Show success message
+            toast.success(`Matched ${student.name} with best tour guide`);
+          } else {
+            toast.error(`No matches found for ${student.name}`);
+          }
+        } catch (err) {
+          console.error(`Error matching student ${student.name}:`, err);
+          toast.error(`Failed to match ${student.name}`);
+        }
+      }
+      
+      // Refresh the list after all matches are processed
+      await fetchVisitingStudents();
+    } catch (err) {
+      console.error('Error in match all process:', err);
+      toast.error('An error occurred while matching all students');
+    }
+  };
+
   return (
     <div className="card bg-white shadow-md border border-base-300 mb-8">
       <div className="p-6">
@@ -330,18 +378,24 @@ export default function DatabaseMatches() {
             </label>
             <div className="flex flex-col gap-4">
               <div className="flex gap-2">
-                <div className="tabs tabs-boxed">
+                <div className="flex gap-2">
                   <button 
-                    className={`tab ${searchType === 'text' ? 'tab-active' : ''}`}
+                    className={`btn ${searchType === 'text' ? 'bg-base-300 text-base-content' : 'btn-ghost'} flex items-center gap-2 transition-all duration-200 hover:scale-105`}
                     onClick={() => setSearchType('text')}
                   >
-                    Name/Email
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                    Name/Email Search
                   </button>
                   <button 
-                    className={`tab ${searchType === 'date' ? 'tab-active' : ''}`}
+                    className={`btn ${searchType === 'date' ? 'bg-base-300 text-base-content' : 'btn-ghost'} flex items-center gap-2 transition-all duration-200 hover:scale-105`}
                     onClick={() => setSearchType('date')}
                   >
-                    Date Range
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    Date Range Search
                   </button>
                 </div>
               </div>
@@ -505,7 +559,7 @@ export default function DatabaseMatches() {
           <div className="flex justify-end">
             <button 
               className="btn btn-primary"
-              onClick={() => filteredStudents.forEach(handleMatch)}
+              onClick={handleMatchAll}
             >
               Match All
             </button>
