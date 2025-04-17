@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { matchTourGuidesFromDatabase, updateStudentMatch } from '@/services/api';
+import { toast } from 'react-hot-toast';
 
 type VisitingStudent = {
   name: string;
@@ -36,6 +37,7 @@ export default function DatabaseMatches() {
   const [matchStatuses, setMatchStatuses] = useState<Record<string, 'success' | 'warning' | 'error' | ''>>({});
   const [matchMessages, setMatchMessages] = useState<Record<string, string>>({});
   const [expandedStudents, setExpandedStudents] = useState<Set<string>>(new Set());
+  const [isDeleting, setIsDeleting] = useState<string | null>(null);
 
   useEffect(() => {
     fetchVisitingStudents();
@@ -43,22 +45,28 @@ export default function DatabaseMatches() {
 
   const fetchVisitingStudents = async () => {
     try {
-      console.log('Fetching visiting students from API');
-      const response = await fetch('/api/visiting-students');
+      console.log('Fetching unmatched visiting students from API');
+      const response = await fetch('/api/visiting-students/unmatched');
       console.log('Response status:', response.status);
       
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-        console.error('Error response:', errorData);
-        throw new Error(errorData.error || 'Failed to fetch visiting students');
+      // Check if response is JSON
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        throw new Error('Server returned non-JSON response');
       }
       
       const data = await response.json();
+      
+      if (!response.ok) {
+        console.error('Error response:', data);
+        throw new Error(data.detail || 'Failed to fetch visiting students');
+      }
+      
       console.log('Success response:', data);
       
       if (data.students) {
         setVisitingStudents(data.students);
-        console.log(`Loaded ${data.students.length} visiting students`);
+        console.log(`Loaded ${data.students.length} unmatched visiting students`);
       } else {
         console.warn('No students array in response:', data);
         setVisitingStudents([]);
@@ -66,6 +74,7 @@ export default function DatabaseMatches() {
     } catch (err) {
       console.error('Error fetching visiting students:', err);
       setError(err instanceof Error ? err.message : 'An error occurred');
+      setVisitingStudents([]); // Clear the students list on error
     } finally {
       setLoading(false);
     }
@@ -187,6 +196,42 @@ export default function DatabaseMatches() {
     });
   };
 
+  const handleDeleteStudent = async (email: string) => {
+    const student = visitingStudents.find(s => s.email === email);
+    if (!student) return;
+
+    if (!confirm(`Are you sure you want to delete ${student.name} (${email})? This action cannot be undone.`)) {
+      return;
+    }
+    
+    setIsDeleting(email);
+    try {
+      console.log('Attempting to delete student:', email);
+      const response = await fetch(`/api/visiting-students/${encodeURIComponent(email)}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      const data = await response.json();
+      console.log('Delete response:', { status: response.status, data });
+      
+      if (response.ok && data.status === 'success') {
+        toast.success(data.message || 'Student deleted successfully');
+        setVisitingStudents(prev => prev.filter(student => student.email !== email));
+      } else {
+        console.error('Delete failed:', data);
+        toast.error(data.detail || 'Failed to delete student');
+      }
+    } catch (error) {
+      console.error('Error deleting student:', error);
+      toast.error('An error occurred while deleting the student');
+    } finally {
+      setIsDeleting(null);
+    }
+  };
+
   const filteredStudents = visitingStudents.filter(student => {
     const searchLower = searchQuery.toLowerCase();
     return (
@@ -234,7 +279,7 @@ export default function DatabaseMatches() {
             </div>
           ) : filteredStudents.length === 0 ? (
             <div className="p-4 bg-base-100 text-base-content/70 rounded-md">
-              <p>No visiting students found in the database.</p>
+              <p>No pending matches</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -255,12 +300,21 @@ export default function DatabaseMatches() {
                         <td className="text-base-content/70">{student.email}</td>
                         <td className="text-base-content/70">{new Date(student.tour_datetime).toLocaleString()}</td>
                         <td>
-                          <button 
-                            className="btn btn-sm btn-success transition-all duration-200 hover:scale-103"
-                            onClick={() => handleMatch(student)}
-                          >
-                            Match
-                          </button>
+                          <div className="flex space-x-2">
+                            <button 
+                              className="btn btn-sm btn-success transition-all duration-200 hover:scale-103"
+                              onClick={() => handleMatch(student)}
+                            >
+                              Match
+                            </button>
+                            <button
+                              className="btn btn-sm btn-danger"
+                              onClick={() => handleDeleteStudent(student.email)}
+                              disabled={isDeleting === student.email}
+                            >
+                              {isDeleting === student.email ? 'Deleting...' : 'Delete'}
+                            </button>
+                          </div>
                         </td>
                       </tr>
                       {expandedStudents.has(student.email) && (

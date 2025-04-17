@@ -249,7 +249,7 @@ async def create_visiting_student(student: VisitingStudent):
             "tour_datetime": student.tour_datetime,
             "is_matched": 0,  # Initialize as unmatched (0)
             "matched_tour_guide": student.matched_tour_guide,
-            "text_representation": text_representation
+            "text_representation": text_representation  # Always include the generated text representation
         }
         logger.info(f"Prepared student data for insertion: {json.dumps(student_data, indent=2)}")
 
@@ -386,6 +386,7 @@ async def get_matched_students():
         )
 
         students = []
+        tour_guides_client = None
         if response and hasattr(response, 'objects'):
             for obj in response.objects:
                 student_data = obj.properties
@@ -422,6 +423,10 @@ async def get_matched_students():
                 students.append(student_data)
         
         logger.info(f"Retrieved {len(students)} matched visiting students")
+
+        # Close the tour guides client if it was created
+        if tour_guides_client:
+            tour_guides_client.close()
 
         return {
             "status": "success",
@@ -471,4 +476,46 @@ async def update_student_match(student_email: str, tour_guide_id: str):
         raise
     except Exception as e:
         logger.error(f"Error updating student match status: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.delete("/visiting-students/{student_email}")
+async def delete_visiting_student(student_email: str):
+    """Delete a visiting student from the database."""
+    try:
+        logger.info(f"Attempting to delete visiting student with email: {student_email}")
+        
+        # Get the VisitingStudent collection
+        visiting_student_collection = client.collections.get("VisitingStudent")
+        logger.info("Successfully retrieved VisitingStudent collection")
+        
+        # Find the student by email
+        student = visiting_student_collection.query.fetch_objects(
+            filters=Filter.by_property("email").equal(student_email),
+            limit=1
+        )
+        logger.info(f"Query result: {student}")
+        
+        if not student.objects:
+            logger.error(f"Student not found with email: {student_email}")
+            raise HTTPException(status_code=404, detail="Visiting student not found")
+        
+        # Delete the student
+        student_uuid = student.objects[0].uuid
+        logger.info(f"Found student with UUID: {student_uuid}")
+        
+        # Use the correct method to delete the object
+        visiting_student_collection.data.delete_many(
+            where=Filter.by_property("email").equal(student_email)
+        )
+        logger.info(f"Successfully deleted visiting student with email: {student_email}")
+        
+        return {
+            "status": "success",
+            "message": "Visiting student deleted successfully"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error deleting visiting student: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e)) 
