@@ -354,6 +354,7 @@ async def match_tour_guides_from_database(request: MatchingRequest):
             for obj in response.objects:
                 match_data = {
                     "student_id": obj.properties.get("student_id", ""),
+                    "name": obj.properties.get("student_id", ""),  # Use student_id as name since that's what we store
                     "gender": obj.properties.get("gender", ""),
                     "grade": obj.properties.get("grade", ""),
                     "residential_status": obj.properties.get("residential_status", ""),

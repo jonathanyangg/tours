@@ -388,7 +388,38 @@ async def get_matched_students():
         students = []
         if response and hasattr(response, 'objects'):
             for obj in response.objects:
-                students.append(obj.properties)
+                student_data = obj.properties
+                
+                # If there's a matched tour guide, fetch their name
+                if student_data.get("matched_tour_guide"):
+                    try:
+                        # Connect to the tour guides database
+                        tour_guides_client = weaviate.connect_to_weaviate_cloud(
+                            cluster_url=os.environ["TOUR_GUIDE_WEAVIATE_URL"],
+                            auth_credentials=Auth.api_key(os.environ["TOUR_GUIDE_WEAVIATE_API_KEY"]),
+                            headers={"X-OpenAI-Api-Key": os.environ.get("OPENAI_API_KEY")}
+                        )
+                        
+                        # Get the tour guide collection
+                        tour_guide_collection = tour_guides_client.collections.get("TourGuide")
+                        
+                        # Fetch the tour guide by UUID
+                        tour_guide = tour_guide_collection.query.fetch_objects(
+                            filters=Filter.by_id().equal(student_data["matched_tour_guide"]),
+                            limit=1
+                        )
+                        
+                        # If tour guide found, add their name to the student data
+                        if tour_guide and hasattr(tour_guide, 'objects') and tour_guide.objects:
+                            tour_guide_name = tour_guide.objects[0].properties.get("student_id", "Unknown")
+                            student_data["matched_tour_guide_name"] = tour_guide_name
+                        else:
+                            student_data["matched_tour_guide_name"] = "Unknown"
+                    except Exception as e:
+                        logger.error(f"Error fetching tour guide name: {e}")
+                        student_data["matched_tour_guide_name"] = "Unknown"
+                
+                students.append(student_data)
         
         logger.info(f"Retrieved {len(students)} matched visiting students")
 

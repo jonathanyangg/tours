@@ -3,12 +3,23 @@
 import React, { useState, useEffect } from 'react';
 import { getMatchedStudents } from '@/services/api';
 
-type MatchedStudent = {
+interface MatchedStudent {
   name: string;
   email: string;
+  gender: string;
+  grade: string;
+  residential_status: string;
+  city_country: string;
+  sports: string[];
+  extracurricular_activities: string[];
+  academic_interests: string[];
+  additional_information: string;
+  race: string;
   tour_datetime: string;
+  is_matched: boolean;
   matched_tour_guide: string;
-};
+  matched_tour_guide_name?: string;
+}
 
 export default function RecentMatches() {
   const [matchedStudents, setMatchedStudents] = useState<MatchedStudent[]>([]);
@@ -79,7 +90,9 @@ export default function RecentMatches() {
               {matchedStudents.map((student, index) => (
                 <tr key={index} className="hover:bg-base-200 transition-all duration-200 hover:scale-[1.01] hover:shadow-sm">
                   <td className="text-base-content">{student.name}</td>
-                  <td className="text-base-content">{student.matched_tour_guide}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {student.matched_tour_guide_name || student.matched_tour_guide}
+                  </td>
                   <td className="text-base-content/70">{new Date(student.tour_datetime).toLocaleString()}</td>
                   <td><button className="btn btn-sm btn-success">Confirmed</button></td>
                 </tr>
