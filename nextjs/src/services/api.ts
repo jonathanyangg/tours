@@ -258,4 +258,30 @@ export async function updateStudentMatch(studentEmail: string, tourGuideId: stri
     console.error('Error updating student match:', error);
     throw error;
   }
+}
+
+/**
+ * Unmatch a student, moving them back to the unmatched list
+ * @param studentEmail The email of the student to unmatch
+ * @returns The response from the server
+ */
+export async function unmatchStudent(studentEmail: string) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/visiting-students/${encodeURIComponent(studentEmail)}/unmatch`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || 'Failed to unmatch student');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error unmatching student:', error);
+    throw error;
+  }
 } 

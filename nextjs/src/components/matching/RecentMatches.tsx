@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { getMatchedStudents } from '@/services/api';
+import { getMatchedStudents, unmatchStudent } from '@/services/api';
+import { toast } from 'react-hot-toast';
 
 interface MatchedStudent {
   name: string;
@@ -25,6 +26,7 @@ export default function RecentMatches() {
   const [matchedStudents, setMatchedStudents] = useState<MatchedStudent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [unmatchingStudent, setUnmatchingStudent] = useState<string | null>(null);
 
   useEffect(() => {
     fetchMatchedStudents();
@@ -44,6 +46,29 @@ export default function RecentMatches() {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleUnmatchStudent = async (email: string) => {
+    if (!confirm(`Are you sure you want to unmatch this student? They will be moved back to the unmatched list.`)) {
+      return;
+    }
+    
+    setUnmatchingStudent(email);
+    try {
+      const response = await unmatchStudent(email);
+      if (response.status === 'success') {
+        toast.success('Student unmatched successfully');
+        // Remove the student from the matched list
+        setMatchedStudents(prev => prev.filter(student => student.email !== email));
+      } else {
+        toast.error('Failed to unmatch student');
+      }
+    } catch (err) {
+      console.error('Error unmatching student:', err);
+      toast.error(err instanceof Error ? err.message : 'An error occurred');
+    } finally {
+      setUnmatchingStudent(null);
     }
   };
 
@@ -72,6 +97,7 @@ export default function RecentMatches() {
                   <th className="text-base-content/70 font-normal">Tour Guide</th>
                   <th className="text-base-content/70 font-normal">Match Date</th>
                   <th className="text-base-content/70 font-normal">Status</th>
+                  <th className="text-base-content/70 font-normal">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -83,6 +109,15 @@ export default function RecentMatches() {
                     </td>
                     <td className="text-base-content/70">{new Date(student.tour_datetime).toLocaleString()}</td>
                     <td><button className="btn btn-sm btn-success">Confirmed</button></td>
+                    <td>
+                      <button
+                        className="btn btn-sm btn-warning"
+                        onClick={() => handleUnmatchStudent(student.email)}
+                        disabled={unmatchingStudent === student.email}
+                      >
+                        {unmatchingStudent === student.email ? 'Unmatching...' : 'Move to Unmatched'}
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>

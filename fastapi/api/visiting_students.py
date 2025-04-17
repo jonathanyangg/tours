@@ -518,4 +518,45 @@ async def delete_visiting_student(student_email: str):
         raise
     except Exception as e:
         logger.error(f"Error deleting visiting student: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/visiting-students/{student_email}/unmatch")
+async def unmatch_student(student_email: str):
+    """Unmatch a visiting student, moving them back to the unmatched list."""
+    try:
+        logger.info(f"Unmatching student with email: {student_email}")
+        visiting_student_collection = client.collections.get("VisitingStudent")
+        
+        # Find the student by email
+        student = visiting_student_collection.query.fetch_objects(
+            filters=Filter.by_property("email").equal(student_email),
+            limit=1
+        )
+        
+        if not student.objects:
+            logger.error(f"Student not found with email: {student_email}")
+            raise HTTPException(status_code=404, detail="Visiting student not found")
+        
+        # Update the student's match status
+        student_obj = student.objects[0]
+        student_obj.properties["is_matched"] = 0  # Set to unmatched (0)
+        student_obj.properties["matched_tour_guide"] = None  # Clear the matched tour guide
+        
+        # Update the object in Weaviate
+        visiting_student_collection.data.update(
+            uuid=student_obj.uuid,
+            properties=student_obj.properties
+        )
+        
+        logger.info(f"Successfully unmatched student {student_email}")
+        
+        return {
+            "status": "success",
+            "message": "Student unmatched successfully"
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error unmatching student: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e)) 
