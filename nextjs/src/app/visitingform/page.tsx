@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Navbar from '@/components/layout/Navbar';
+import Footer from '@/components/layout/Footer';
 
 type VisitingStudentForm = {
   name: string;
@@ -314,6 +315,7 @@ export default function VisitingForm() {
           </div>
         </div>
       </main>
+      <Footer />
     </div>
   );
 } 

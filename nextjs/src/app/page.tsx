@@ -3,21 +3,21 @@ import Hero from '@/components/layout/Hero';
 import DatabaseMatches from '@/components/matching/DatabaseMatches';
 import IndividualMatch from '@/components/matching/IndividualMatch';
 import RecentMatches from '@/components/matching/RecentMatches';
-import Footer from '@/components/footer/footer';
+import Footer from '@/components/layout/Footer';
 
 export default function Home() {
   return (
-    <div className="flex-1 bg-white flex flex-col min-h-screen">
+    <div className="flex flex-col min-h-screen bg-white">
       <Navbar />
       
       {/* Main Content */}
-      <main className="p-8 flex-1 max-w-7xl mx-auto w-full">
+      <main className="flex-1 p-8 max-w-7xl mx-auto w-full">
         <Hero />
         <DatabaseMatches />
         <RecentMatches />
         <IndividualMatch />
-        <Footer />
       </main>
+      <Footer />
     </div>
   );
 } 
