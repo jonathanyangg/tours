@@ -90,9 +90,9 @@ export default function VisitingForm() {
   };
 
   return (
-    <div className="min-h-screen bg-base-100">
+    <div className="flex flex-col min-h-screen bg-white">
       <Navbar />
-      <main className="container mx-auto px-4 py-8 max-w-4xl">
+      <main className="flex-1 container mx-auto px-4 py-8 max-w-4xl">
         <div className="card bg-white shadow-lg">
           <div className="p-8">
             <h1 className="text-3xl font-bold text-base-content mb-6">Visiting Student Registration</h1>
