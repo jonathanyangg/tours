@@ -7,18 +7,21 @@ export default function TourGuides() {
   const [students, setStudents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [status, setStatus] = useState<string>('');
 
   useEffect(() => {
     const fetchStudents = async () => {
       try {
         setLoading(true);
-        const data = await getTourGuides();
-        setStudents(data || []);
+        const response = await getTourGuides();
+        setStudents(response.students || []);
+        setStatus(response.status);
         setError(null);
       } catch (err) {
         const error = err instanceof Error ? err : new Error('Failed to fetch student information');
         setError(error.message);
         setStudents([]);
+        setStatus('error');
       } finally {
         setLoading(false);
       }
@@ -41,6 +44,10 @@ export default function TourGuides() {
           <div className="p-4 bg-error/20 text-error-content rounded-md">
             <h3 className="font-medium mb-2">Error</h3>
             <p>{error}</p>
+          </div>
+        ) : status === 'empty' ? (
+          <div className="bg-base-100 text-base-content/70 rounded-md">
+            <p>No tour guides currently in database. Please upload a CSV file to populate the database.</p>
           </div>
         ) : students.length === 0 ? (
           <div className="p-4 bg-base-100 text-base-content/70 rounded-md">

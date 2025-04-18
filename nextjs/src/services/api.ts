@@ -42,7 +42,12 @@ export async function getTourGuides() {
       throw new Error(errorData.detail || 'Failed to fetch tour guides');
     }
 
-    return await response.json();
+    const data = await response.json();
+    return {
+      status: data.status || 'success',
+      message: data.message || 'Tour guides retrieved successfully',
+      students: data.students || []
+    };
   } catch (error) {
     console.error('Error fetching tour guides:', error);
     throw error;

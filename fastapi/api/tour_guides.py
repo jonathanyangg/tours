@@ -173,6 +173,14 @@ async def get_tour_guides():
     """Retrieve student information from Weaviate."""
     try:
         with get_tour_guides_client() as client:
+            # Check if the TourGuide collection exists
+            if "TourGuide" not in client.collections.list_all():
+                return {
+                    "status": "empty",
+                    "message": "No tour guides currently in database",
+                    "students": []
+                }
+            
             # Get the collection
             tour_guide_collection = client.collections.get("TourGuide")
             
@@ -192,7 +200,11 @@ async def get_tour_guides():
                         "residential_status": obj.properties.get("residential_status", "")
                     })
             
-            return students
+            return {
+                "status": "success",
+                "message": "Tour guides retrieved successfully",
+                "students": students
+            }
     except Exception as e:
         logger.error(f"Error retrieving student information: {e}")
         raise HTTPException(status_code=500, detail=str(e))
