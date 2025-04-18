@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from api import tour_guides, visiting_students
+from api import tour_guides, visiting_students, matching
 
 app = FastAPI()
 
@@ -16,6 +16,7 @@ app.add_middleware(
 # Include routers
 app.include_router(tour_guides.router, prefix="/api", tags=["tour-guides"])
 app.include_router(visiting_students.router, prefix="/api", tags=["visiting-students"])
+app.include_router(matching.router, prefix="/api", tags=["matching"])
 
 @app.get("/")
 async def root():

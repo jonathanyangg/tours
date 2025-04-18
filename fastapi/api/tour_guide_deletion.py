@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
 import logging
-from .tour_guides import get_tour_guides_client
+from .tour_guides import get_weaviate_client
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -11,7 +11,7 @@ router = APIRouter()
 def delete_tour_guide_schema():
     """Delete the tour guide schema if it exists."""
     try:
-        with get_tour_guides_client() as client:
+        with get_weaviate_client() as client:
             if "TourGuide" in client.collections.list_all():
                 client.collections.delete("TourGuide")
                 logger.info("Deleted existing TourGuide schema")
