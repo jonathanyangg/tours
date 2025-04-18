@@ -323,7 +323,7 @@ export default function DatabaseMatches() {
             const bestMatch = result.matches[0];
             
             // Automatically choose the best match
-            await handleChooseMatch(student.email, bestMatch.id);
+            await handleChooseMatch(student.email, bestMatch.student_id);
             
             // Show success message
             toast.success(`Matched ${student.name} with best tour guide`);
@@ -528,7 +528,7 @@ export default function DatabaseMatches() {
                                         <p className="text-success font-medium">Match Score: {formatSimilarity(1 - (match.distance || 0))}</p>
                                         <button
                                           className="btn btn-primary"
-                                          onClick={() => handleChooseMatch(student.email, match.id)}
+                                          onClick={() => handleChooseMatch(student.email, match.student_id)}
                                         >
                                           Choose Match
                                         </button>
