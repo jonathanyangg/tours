@@ -15,10 +15,12 @@ from weaviate.classes.init import Auth
 from pydantic import BaseModel
 from weaviate.collections.classes.filters import Filter
 from weaviate.classes.query import MetadataQuery
+from contextlib import contextmanager
+from .visiting_students import get_weaviate_client  # Import the function from visiting_students.py
 
 openai_key = os.environ.get("OPENAI_API_KEY")
-weaviate_url = os.environ["WEAVIATE_URL"]
-weaviate_api_key = os.environ["WEAVIATE_API_KEY"]
+weaviate_url = os.environ["TOUR_GUIDE_WEAVIATE_URL"]
+weaviate_api_key = os.environ["TOUR_GUIDE_WEAVIATE_API_KEY"]
 visiting_student_weaviate_url = os.environ["VISITING_STUDENT_WEAVIATE_URL"]
 visiting_student_weaviate_api_key = os.environ["VISITING_STUDENT_WEAVIATE_API_KEY"]
 
@@ -33,20 +35,6 @@ router = APIRouter()
 headers = {
     "X-OpenAI-Api-Key": openai_key,
 }
-
-# Connect to tour guides Weaviate instance
-tour_guides_client = weaviate.connect_to_weaviate_cloud(
-    cluster_url=weaviate_url,
-    auth_credentials=Auth.api_key(weaviate_api_key),
-    headers=headers
-)
-
-# Connect to visiting students Weaviate instance
-visiting_students_client = weaviate.connect_to_weaviate_cloud(
-    cluster_url=visiting_student_weaviate_url,
-    auth_credentials=Auth.api_key(visiting_student_weaviate_api_key),
-    headers=headers
-)
 
 # Define the matching request models
 class MatchingRequest(BaseModel):
@@ -184,26 +172,27 @@ async def upload_tour_guides(file: UploadFile = File(...)):
 async def get_tour_guides():
     """Retrieve student information from Weaviate."""
     try:
-        # Get the collection
-        tour_guide_collection = tour_guides_client.collections.get("TourGuide")
-        
-        # Using the newer API with proper method chain
-        query_result = tour_guide_collection.query.fetch_objects(
-            limit=50  # Set limit to 50 records
-        )
-        
-        # Convert the response to a format that can be JSON serialized
-        students = []
-        if query_result and hasattr(query_result, 'objects'):
-            for obj in query_result.objects:
-                students.append({
-                    "student_id": obj.properties.get("student_id", ""),
-                    "gender": obj.properties.get("gender", ""),
-                    "grade": obj.properties.get("grade", ""),
-                    "residential_status": obj.properties.get("residential_status", "")
-                })
-        
-        return students
+        with get_tour_guides_client() as client:
+            # Get the collection
+            tour_guide_collection = client.collections.get("TourGuide")
+            
+            # Using the newer API with proper method chain
+            query_result = tour_guide_collection.query.fetch_objects(
+                limit=50  # Set limit to 50 records
+            )
+            
+            # Convert the response to a format that can be JSON serialized
+            students = []
+            if query_result and hasattr(query_result, 'objects'):
+                for obj in query_result.objects:
+                    students.append({
+                        "student_id": obj.properties.get("student_id", ""),
+                        "gender": obj.properties.get("gender", ""),
+                        "grade": obj.properties.get("grade", ""),
+                        "residential_status": obj.properties.get("residential_status", "")
+                    })
+            
+            return students
     except Exception as e:
         logger.error(f"Error retrieving student information: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -232,61 +221,82 @@ async def match_tour_guides_manual(request: MatchingRequest):
         text_representation = ", ".join(text_fields)
         logger.info(f"Generated text representation: {text_representation}")
         
-        # Get the TourGuide collection
-        tour_guide_collection = tour_guides_client.collections.get("TourGuide")
-        
-        # First filter by gender and grade
-        gender_first_char = request.gender[0].lower() if request.gender else ""
-        
-        # Build the filter conditions
-        gender_filter = Filter.by_property("gender").like(f"{gender_first_char}*")
-        grade_filter = Filter.by_property("grade").equal(request.grade)
-        
-        # Combine filters
-        combined_filter = gender_filter & grade_filter
-        
-        # Add residential status filter if provided
-        if request.residential_status:
-            residential_filter = Filter.by_property("residential_status").like(f"{request.residential_status[0].lower()}*")
-            combined_filter = combined_filter & residential_filter
-        
-        # Perform vector search with filters
-        response = tour_guide_collection.query.near_text(
-            query=text_representation,
-            limit=3,
-            filters=combined_filter,
-            return_metadata=MetadataQuery(distance=True)
-        )
-        
-        # Process the results
-        matches = []
-        if response and hasattr(response, 'objects'):
-            for obj in response.objects:
-                matches.append({
-                    "student_id": obj.properties.get("student_id", ""),
-                    "gender": obj.properties.get("gender", ""),
-                    "grade": obj.properties.get("grade", ""),
-                    "residential_status": obj.properties.get("residential_status", ""),
-                    "distance": obj.metadata.distance if hasattr(obj.metadata, 'distance') else None,
-                    "id": obj.uuid
-                })
-        
-        if matches:
-            return {
-                "status": "success",
-                "message": f"Found {len(matches)} matching tour guides",
-                "matches": matches
-            }
-        else:
-            return {
-                "status": "warning",
-                "message": "No matching tour guides found with the same gender and grade",
-                "matches": []
-            }
+        with get_tour_guides_client() as client:
+            # Get the TourGuide collection
+            tour_guide_collection = client.collections.get("TourGuide")
             
+            # First filter by gender and grade
+            gender_first_char = request.gender[0].lower() if request.gender else ""
+            
+            # Build the filter conditions
+            gender_filter = Filter.by_property("gender").like(f"{gender_first_char}*")
+            grade_filter = Filter.by_property("grade").equal(request.grade)
+            
+            # Combine filters
+            combined_filter = gender_filter & grade_filter
+            
+            # Add residential status filter if provided
+            if request.residential_status:
+                residential_filter = Filter.by_property("residential_status").like(f"{request.residential_status[0].lower()}*")
+                combined_filter = combined_filter & residential_filter
+            
+            # Perform vector search with filters
+            response = tour_guide_collection.query.near_text(
+                query=text_representation,
+                limit=3,
+                filters=combined_filter,
+                return_metadata=MetadataQuery(distance=True)
+            )
+            
+            # Process the results
+            matches = []
+            if response and hasattr(response, 'objects'):
+                for obj in response.objects:
+                    matches.append({
+                        "student_id": obj.properties.get("student_id", ""),
+                        "gender": obj.properties.get("gender", ""),
+                        "grade": obj.properties.get("grade", ""),
+                        "residential_status": obj.properties.get("residential_status", ""),
+                        "distance": obj.metadata.distance if hasattr(obj.metadata, 'distance') else None,
+                        "id": obj.uuid
+                    })
+            
+            if matches:
+                return {
+                    "status": "success",
+                    "message": f"Found {len(matches)} matching tour guides",
+                    "matches": matches
+                }
+            else:
+                return {
+                    "status": "warning",
+                    "message": "No matching tour guides found with the same gender and grade",
+                    "matches": []
+                }
+                
     except Exception as e:
         logger.error(f"Error matching tour guides: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+@contextmanager
+def get_tour_guides_client():
+    """Context manager for Weaviate client connections."""
+    client = None
+    try:
+        client = weaviate.connect_to_weaviate_cloud(
+            cluster_url=weaviate_url,
+            auth_credentials=Auth.api_key(weaviate_api_key),
+            headers=headers
+        )
+        logger.info("Successfully connected to Weaviate")
+        yield client
+    except Exception as e:
+        logger.error(f"Failed to connect to Weaviate: {e}")
+        raise
+    finally:
+        if client:
+            client.close()
+            logger.info("Closed Weaviate connection")
 
 @router.post("/match-tour-guides-from-database")
 async def match_tour_guides_from_database(request: MatchingRequest):
@@ -295,93 +305,95 @@ async def match_tour_guides_from_database(request: MatchingRequest):
         logger.info(f"Received database matching request: {request}")
         logger.info(f"Request data: student_id={request.student_id}, gender={request.gender}, grade={request.grade}, residential_status={request.residential_status}")
         
-        # Get the visiting student's vector from the visiting student database
-        visiting_student_collection = visiting_students_client.collections.get("VisitingStudent")
-        logger.info("Fetching visiting student from database...")
-        visiting_student = visiting_student_collection.query.fetch_objects(
-            filters=Filter.by_property("email").equal(request.student_id),
-            limit=1,
-            include_vector=True  # Explicitly request the vector
-        )
-        
-        if not visiting_student.objects:
-            logger.error(f"No visiting student found with email: {request.student_id}")
-            raise HTTPException(status_code=404, detail="Visiting student not found")
-        
-        # Log the visiting student object structure without vector
-        student_obj = visiting_student.objects[0]
-        student_data = {k: v for k, v in student_obj.properties.items() if k != 'vector'}
-        logger.info(f"Found visiting student: {json.dumps(student_data, indent=2)}")
-        
-        # Get the vector from the visiting student
-        visiting_student_vector = visiting_student.objects[0].vector.get('default', [])
-        logger.info(f"Retrieved vector with length: {len(visiting_student_vector)}")
-        
-        # Get the TourGuide collection from the tour guides database
-        tour_guide_collection = tour_guides_client.collections.get("TourGuide")
-        
-        # First filter by gender and grade
-        gender_first_char = request.gender[0].lower() if request.gender else ""
-        
-        # Build the filter conditions
-        gender_filter = Filter.by_property("gender").like(f"{gender_first_char}*")
-        grade_filter = Filter.by_property("grade").equal(request.grade)
-        
-        # Combine filters
-        combined_filter = gender_filter & grade_filter
-        
-        # Add residential status filter if provided
-        if request.residential_status:
-            residential_filter = Filter.by_property("residential_status").like(f"{request.residential_status[0].lower()}*")
-            combined_filter = combined_filter & residential_filter
-        
-        # Log the search parameters
-        logger.info(f"Searching with filters: {combined_filter}")
-        logger.info(f"Vector length: {len(visiting_student_vector) if visiting_student_vector else 'None'}")
-        
-        # Perform vector search with filters using the visiting student's vector
-        logger.info("Performing vector search...")
-        response = tour_guide_collection.query.near_vector(
-            near_vector=visiting_student_vector,  # Use the vector values directly
-            limit=6,
-            filters=combined_filter,
-            return_metadata=MetadataQuery(distance=True)
-        )
-        
-        # Process the results
-        matches = []
-        if response and hasattr(response, 'objects'):
-            for obj in response.objects:
-                match_data = {
-                    "student_id": obj.properties.get("student_id", ""),
-                    "name": obj.properties.get("student_id", ""),  # Use student_id as name since that's what we store
-                    "gender": obj.properties.get("gender", ""),
-                    "grade": obj.properties.get("grade", ""),
-                    "residential_status": obj.properties.get("residential_status", ""),
-                    "distance": obj.metadata.distance if hasattr(obj.metadata, 'distance') else None,
-                    "id": str(obj.uuid)  # Convert UUID to string
-                }
-                matches.append(match_data)
-                # Log without the UUID to avoid serialization issues
-                log_data = match_data.copy()
-                log_data["id"] = str(log_data["id"])  # Ensure ID is string for logging
-                logger.info(f"Found match: {json.dumps(log_data, indent=2)}")
-        
-        if matches:
-            logger.info(f"Found {len(matches)} matching tour guides")
-            return {
-                "status": "success",
-                "message": f"Found {len(matches)} matching tour guides",
-                "matches": matches
-            }
-        else:
-            logger.warning("No matching tour guides found")
-            return {
-                "status": "warning",
-                "message": "No matching tour guides found with the same gender and grade",
-                "matches": []
-            }
+        with get_weaviate_client() as visiting_students_client:
+            # Get the visiting student's vector from the visiting student database
+            visiting_student_collection = visiting_students_client.collections.get("VisitingStudent")
+            logger.info("Fetching visiting student from database...")
+            visiting_student = visiting_student_collection.query.fetch_objects(
+                filters=Filter.by_property("email").equal(request.student_id),
+                limit=1,
+                include_vector=True  # Explicitly request the vector
+            )
             
+            if not visiting_student.objects:
+                logger.error(f"No visiting student found with email: {request.student_id}")
+                raise HTTPException(status_code=404, detail="Visiting student not found")
+            
+            # Log the visiting student object structure without vector
+            student_obj = visiting_student.objects[0]
+            student_data = {k: v for k, v in student_obj.properties.items() if k != 'vector'}
+            logger.info(f"Found visiting student: {json.dumps(student_data, indent=2)}")
+            
+            # Get the vector from the visiting student
+            visiting_student_vector = visiting_student.objects[0].vector.get('default', [])
+            logger.info(f"Retrieved vector with length: {len(visiting_student_vector)}")
+            
+            with get_tour_guides_client() as tour_guides_client:
+                # Get the TourGuide collection from the tour guides database
+                tour_guide_collection = tour_guides_client.collections.get("TourGuide")
+                
+                # First filter by gender and grade
+                gender_first_char = request.gender[0].lower() if request.gender else ""
+                
+                # Build the filter conditions
+                gender_filter = Filter.by_property("gender").like(f"{gender_first_char}*")
+                grade_filter = Filter.by_property("grade").equal(request.grade)
+                
+                # Combine filters
+                combined_filter = gender_filter & grade_filter
+                
+                # Add residential status filter if provided
+                if request.residential_status:
+                    residential_filter = Filter.by_property("residential_status").like(f"{request.residential_status[0].lower()}*")
+                    combined_filter = combined_filter & residential_filter
+                
+                # Log the search parameters
+                logger.info(f"Searching with filters: {combined_filter}")
+                logger.info(f"Vector length: {len(visiting_student_vector) if visiting_student_vector else 'None'}")
+                
+                # Perform vector search with filters using the visiting student's vector
+                logger.info("Performing vector search...")
+                response = tour_guide_collection.query.near_vector(
+                    near_vector=visiting_student_vector,  # Use the vector values directly
+                    limit=6,
+                    filters=combined_filter,
+                    return_metadata=MetadataQuery(distance=True)
+                )
+                
+                # Process the results
+                matches = []
+                if response and hasattr(response, 'objects'):
+                    for obj in response.objects:
+                        match_data = {
+                            "student_id": obj.properties.get("student_id", ""),
+                            "name": obj.properties.get("student_id", ""),  # Use student_id as name since that's what we store
+                            "gender": obj.properties.get("gender", ""),
+                            "grade": obj.properties.get("grade", ""),
+                            "residential_status": obj.properties.get("residential_status", ""),
+                            "distance": obj.metadata.distance if hasattr(obj.metadata, 'distance') else None,
+                            "id": str(obj.uuid)  # Convert UUID to string
+                        }
+                        matches.append(match_data)
+                        # Log without the UUID to avoid serialization issues
+                        log_data = match_data.copy()
+                        log_data["id"] = str(log_data["id"])  # Ensure ID is string for logging
+                        logger.info(f"Found match: {json.dumps(log_data, indent=2)}")
+                
+                if matches:
+                    logger.info(f"Found {len(matches)} matching tour guides")
+                    return {
+                        "status": "success",
+                        "message": f"Found {len(matches)} matching tour guides",
+                        "matches": matches
+                    }
+                else:
+                    logger.warning("No matching tour guides found")
+                    return {
+                        "status": "warning",
+                        "message": "No matching tour guides found with the same gender and grade",
+                        "matches": []
+                    }
+                
     except HTTPException:
         raise
     except Exception as e:
@@ -392,12 +404,13 @@ async def match_tour_guides_from_database(request: MatchingRequest):
 async def test_weaviate_connection():
     """Test the connection to Weaviate and return the schema."""
     try:
-        # Try to get the collections to check connection
-        status = tour_guides_client.is_ready()
-        return {
-            "status": status, 
-            "message": "Weaviate connection successful",
-        }
+        with get_tour_guides_client() as client:
+            # Try to get the collections to check connection
+            status = client.is_ready()
+            return {
+                "status": status, 
+                "message": "Weaviate connection successful",
+            }
     except Exception as e:
         logger.error(f"Weaviate connection error: {e}")
         return {

@@ -10,6 +10,7 @@ from dotenv import load_dotenv
 import logging
 import json
 import weaviate.collections.classes.config as wvc
+from contextlib import contextmanager
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -18,6 +19,10 @@ logger = logging.getLogger(__name__)
 load_dotenv()
 
 router = APIRouter()
+
+# Configuration constants
+EMBEDDING_MODEL = "text-embedding-3-large"
+BATCH_SIZE = 100
 
 openai_key = os.environ.get("OPENAI_API_KEY")
 weaviate_url = os.environ["VISITING_STUDENT_WEAVIATE_URL"]
@@ -30,16 +35,25 @@ headers = {
     "X-OpenAI-Api-Key": openai_key,
 }
 
-try:
-    client = weaviate.connect_to_weaviate_cloud(
-        cluster_url=weaviate_url,
-        auth_credentials=Auth.api_key(weaviate_api_key),
-        headers=headers
-    )
-    logger.info("Successfully connected to Weaviate")
-except Exception as e:
-    logger.error(f"Failed to connect to Weaviate: {e}")
-    raise
+@contextmanager
+def get_weaviate_client():
+    """Context manager for Weaviate client connections."""
+    client = None
+    try:
+        client = weaviate.connect_to_weaviate_cloud(
+            cluster_url=weaviate_url,
+            auth_credentials=Auth.api_key(weaviate_api_key),
+            headers=headers
+        )
+        logger.info("Successfully connected to Weaviate")
+        yield client
+    except Exception as e:
+        logger.error(f"Failed to connect to Weaviate: {e}")
+        raise
+    finally:
+        if client:
+            client.close()
+            logger.info("Closed Weaviate connection")
 
 class VisitingStudent(BaseModel):
     name: str
@@ -57,145 +71,157 @@ class VisitingStudent(BaseModel):
     is_matched: Optional[bool] = False
     matched_tour_guide: Optional[str] = None
 
-def create_visiting_student_schema():
-    """Create the schema for visiting students if it doesn't exist."""
+def create_schema():
+    """Create the Weaviate schema for visiting students if it doesn't exist."""
     try:
-        # List existing collections (schemas)
-        existing_collections = client.collections.list_all()
-        logger.info(f"Existing collections: {existing_collections}")
-        
-        if "VisitingStudent" not in existing_collections:
-            # Configure the OpenAI vectorizer
-            vectorizer_config = wvc.Configure.Vectorizer.text2vec_openai(
-                model="text-embedding-3-large",
-                model_version="1.0.0",
-                dimensions=3072
-            )
-            logger.info(f"Created vectorizer config: {vectorizer_config}")
+        with get_weaviate_client() as client:
+            # List existing collections (schemas)
+            existing_collections = client.collections.list_all()
+            logger.info(f"Existing collections: {existing_collections}")
             
-            client.collections.create(
-                name="VisitingStudent",
-                description="A visiting student with their information and vector embedding",
-                properties=[
-                    {
-                        "name": "name",
-                        "data_type": DataType.TEXT,
-                        "description": "The name of the visiting student",
-                    },
-                    {
-                        "name": "email",
-                        "data_type": DataType.TEXT,
-                        "description": "The email of the visiting student",
-                    },
-                    {
-                        "name": "gender",
-                        "data_type": DataType.TEXT,
-                        "description": "The gender of the visiting student",
-                    },
-                    {
-                        "name": "grade",
-                        "data_type": DataType.TEXT,
-                        "description": "The grade of the visiting student",
-                    },
-                    {
-                        "name": "residential_status",
-                        "data_type": DataType.TEXT,
-                        "description": "The residential status of the visiting student",
-                    },
-                    {
-                        "name": "city_country",
-                        "data_type": DataType.TEXT,
-                        "description": "The city and country of the visiting student",
-                    },
-                    {
-                        "name": "sports",
-                        "data_type": DataType.TEXT,
-                        "description": "The sports interests of the visiting student",
-                    },
-                    {
-                        "name": "extracurricular_activities",
-                        "data_type": DataType.TEXT,
-                        "description": "The extracurricular activities of the visiting student",
-                    },
-                    {
-                        "name": "academic_interests",
-                        "data_type": DataType.TEXT,
-                        "description": "The academic interests of the visiting student",
-                    },
-                    {
-                        "name": "additional_information",
-                        "data_type": DataType.TEXT,
-                        "description": "Additional information about the visiting student",
-                    },
-                    {
-                        "name": "race",
-                        "data_type": DataType.TEXT,
-                        "description": "The race/ethnicity of the visiting student",
-                    },
-                    {
-                        "name": "tour_datetime",
-                        "data_type": DataType.TEXT,
-                        "description": "The scheduled date and time of the tour",
-                    },
-                    {
-                        "name": "is_matched",
-                        "data_type": DataType.INT,
-                        "description": "Whether the student has been matched with a tour guide (0=unmatched, 1=matched)",
-                    },
-                    {
-                        "name": "matched_tour_guide",
-                        "data_type": DataType.TEXT,
-                        "description": "The ID of the matched tour guide",
-                    },
-                    {
-                        "name": "text_representation",
-                        "data_type": DataType.TEXT,
-                        "description": "A text representation of the student's information for vector search",
+            if "VisitingStudent" not in existing_collections:
+                properties = [
+                    wvc.config.Property(
+                        name="name",
+                        data_type=wvc.config.DataType.TEXT,
+                        description="Name of the visiting student",
+                        indexFilterable=True,
+                        indexSearchable=True
+                    ),
+                    wvc.config.Property(
+                        name="email",
+                        data_type=wvc.config.DataType.TEXT,
+                        description="Email address of the visiting student",
+                        indexFilterable=True,
+                        indexSearchable=True
+                    ),
+                    wvc.config.Property(
+                        name="gender",
+                        data_type=wvc.config.DataType.TEXT,
+                        description="Gender of the visiting student",
+                        indexFilterable=True,
+                        indexSearchable=True
+                    ),
+                    wvc.config.Property(
+                        name="grade",
+                        data_type=wvc.config.DataType.TEXT,
+                        description="Grade level of the visiting student",
+                        indexFilterable=True,
+                        indexSearchable=True
+                    ),
+                    wvc.config.Property(
+                        name="residential_status",
+                        data_type=wvc.config.DataType.TEXT,
+                        description="Residential status of the visiting student",
+                        indexFilterable=True,
+                        indexSearchable=True
+                    ),
+                    wvc.config.Property(
+                        name="city_country",
+                        data_type=wvc.config.DataType.TEXT,
+                        description="City and country of the visiting student",
+                        indexFilterable=True,
+                        indexSearchable=True
+                    ),
+                    wvc.config.Property(
+                        name="sports",
+                        data_type=wvc.config.DataType.TEXT,
+                        description="Sports interests of the visiting student",
+                        indexFilterable=True,
+                        indexSearchable=True
+                    ),
+                    wvc.config.Property(
+                        name="extracurricular_activities",
+                        data_type=wvc.config.DataType.TEXT,
+                        description="Extracurricular activities of the visiting student",
+                        indexFilterable=True,
+                        indexSearchable=True
+                    ),
+                    wvc.config.Property(
+                        name="academic_interests",
+                        data_type=wvc.config.DataType.TEXT,
+                        description="Academic interests of the visiting student",
+                        indexFilterable=True,
+                        indexSearchable=True
+                    ),
+                    wvc.config.Property(
+                        name="additional_information",
+                        data_type=wvc.config.DataType.TEXT,
+                        description="Additional information about the visiting student",
+                        indexFilterable=True,
+                        indexSearchable=True
+                    ),
+                    wvc.config.Property(
+                        name="race",
+                        data_type=wvc.config.DataType.TEXT,
+                        description="Race of the visiting student",
+                        indexFilterable=True,
+                        indexSearchable=True
+                    ),
+                    wvc.config.Property(
+                        name="tour_datetime",
+                        data_type=wvc.config.DataType.TEXT,
+                        description="Date and time of the tour",
+                        indexFilterable=True,
+                        indexSearchable=True
+                    ),
+                    wvc.config.Property(
+                        name="is_matched",
+                        data_type=wvc.config.DataType.INT,
+                        description="Whether the student has been matched with a tour guide (0=unmatched, 1=matched)",
+                        indexFilterable=True,
+                        indexSearchable=False
+                    ),
+                    wvc.config.Property(
+                        name="matched_tour_guide",
+                        data_type=wvc.config.DataType.TEXT,
+                        description="The ID of the matched tour guide",
+                        indexFilterable=True,
+                        indexSearchable=True
+                    ),
+                    wvc.config.Property(
+                        name="text_representation",
+                        data_type=wvc.config.DataType.TEXT,
+                        description="A text representation of the student's information for vector search",
+                        indexFilterable=False,
+                        indexSearchable=True,
+                        tokenization="word"
+                    )
+                ]
+                
+                # Configure the OpenAI vectorizer
+                vectorizer_config = wvc.config.Configure.NamedVectors.text2vec_openai(
+                    name="text_vector",
+                    source_properties=["text_representation"],
+                    model=EMBEDDING_MODEL,
+                    dimensions=3072,
+                    model_options={
+                        "baseURL": "https://api.openai.com/v1",
+                        "temperature": 0,  # More deterministic results
+                        "maxTokens": 8000  # Maximum context length
                     }
-                ],
-                vectorizer_config=vectorizer_config
-            )
-            logger.info("Created VisitingStudent schema with vectorizer configuration")
-            
-            # Verify the schema was created correctly
-            schema = client.collections.get("VisitingStudent").config.get()
-            # Log only the relevant parts of the schema
-            logger.info(f"Schema name: {schema.name}")
-            logger.info(f"Schema description: {schema.description}")
-            logger.info(f"Schema properties: {[prop.name for prop in schema.properties]}")
-        else:
-            logger.info("VisitingStudent schema already exists")
-            # Log only the relevant parts of the existing schema
-            schema = client.collections.get("VisitingStudent").config.get()
-            logger.info(f"Schema name: {schema.name}")
-            logger.info(f"Schema description: {schema.description}")
-            logger.info(f"Schema properties: {[prop.name for prop in schema.properties]}")
+                )
+                
+                client.collections.create(
+                    name="VisitingStudent",
+                    description="A visiting student with their information and vector embedding",
+                    properties=properties,
+                    vectorizer_config=[vectorizer_config],
+                    inverted_index_config={
+                        "indexTimestamps": True,  # Enable timestamp indexing
+                        "stopwords": {
+                            "preset": "en",  # Use English stopwords
+                            "additions": [],  # Add custom stopwords if needed
+                            "removals": []    # Remove stopwords if needed
+                        }
+                    }
+                )
+                logger.info("Created VisitingStudent schema in Weaviate")
+            else:
+                logger.info("VisitingStudent schema already exists")
     except Exception as e:
-        logger.error(f"Error creating VisitingStudent schema: {e}")
+        logger.error(f"Error creating schema: {e}")
         raise
-
-def delete_visiting_student_schema():
-    """Delete the visiting student schema if it exists."""
-    try:
-        if "VisitingStudent" in client.collections.list_all():
-            client.collections.delete("VisitingStudent")
-            logger.info("Deleted existing VisitingStudent schema")
-            return True
-        return False
-    except Exception as e:
-        logger.error(f"Error deleting VisitingStudent schema: {e}")
-        raise
-
-@router.delete("/visiting-students/schema")
-async def delete_schema():
-    """Endpoint to delete the visiting student schema. Use with caution as this will delete all visiting student data."""
-    try:
-        deleted = delete_visiting_student_schema()
-        if deleted:
-            return {"status": "success", "message": "VisitingStudent schema deleted successfully"}
-        return {"status": "not_found", "message": "VisitingStudent schema does not exist"}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/visiting-students")
 async def create_visiting_student(student: VisitingStudent):
@@ -204,7 +230,7 @@ async def create_visiting_student(student: VisitingStudent):
         logger.info(f"Received visiting student data: {json.dumps(student.dict(), indent=2)}")
         
         # Ensure the schema exists
-        create_visiting_student_schema()
+        create_schema()
 
         # Create text representation for vector search
         text_fields = []
@@ -229,69 +255,70 @@ async def create_visiting_student(student: VisitingStudent):
         # Log that vector was generated
         logger.info("Vector property generated successfully")
         
-        # Get the VisitingStudent collection
-        visiting_student_collection = client.collections.get("VisitingStudent")
-        logger.info("Retrieved VisitingStudent collection")
+        with get_weaviate_client() as client:
+            # Get the VisitingStudent collection
+            visiting_student_collection = client.collections.get("VisitingStudent")
+            logger.info("Retrieved VisitingStudent collection")
 
-        # Create the student object
-        student_data = {
-            "name": student.name,
-            "email": student.email,
-            "gender": student.gender,
-            "grade": student.grade,
-            "residential_status": student.residential_status,
-            "city_country": student.city_country,
-            "sports": student.sports,
-            "extracurricular_activities": student.extracurricular_activities,
-            "academic_interests": student.academic_interests,
-            "additional_information": student.additional_information,
-            "race": student.race,
-            "tour_datetime": student.tour_datetime,
-            "is_matched": 0,  # Initialize as unmatched (0)
-            "matched_tour_guide": student.matched_tour_guide,
-            "text_representation": text_representation  # Always include the generated text representation
-        }
-        logger.info(f"Prepared student data for insertion: {json.dumps(student_data, indent=2)}")
+            # Create the student object
+            student_data = {
+                "name": student.name,
+                "email": student.email,
+                "gender": student.gender,
+                "grade": student.grade,
+                "residential_status": student.residential_status,
+                "city_country": student.city_country,
+                "sports": student.sports,
+                "extracurricular_activities": student.extracurricular_activities,
+                "academic_interests": student.academic_interests,
+                "additional_information": student.additional_information,
+                "race": student.race,
+                "tour_datetime": student.tour_datetime,
+                "is_matched": 0,  # Initialize as unmatched (0)
+                "matched_tour_guide": student.matched_tour_guide,
+                "text_representation": text_representation  # Always include the generated text representation
+            }
+            logger.info(f"Prepared student data for insertion: {json.dumps(student_data, indent=2)}")
 
-        # Insert the student into Weaviate
-        logger.info("Inserting student data into Weaviate")
-        result = visiting_student_collection.data.insert(student_data)
-        logger.info(f"Student inserted successfully with ID: {result}")
+            # Insert the student into Weaviate
+            logger.info("Inserting student data into Weaviate")
+            result = visiting_student_collection.data.insert(student_data)
+            logger.info(f"Student inserted successfully with ID: {result}")
 
-        # Verify the vector was generated
-        logger.info("Verifying vector generation...")
-        inserted_student = visiting_student_collection.query.fetch_objects(
-            filters=Filter.by_property("email").equal(student.email),
-            limit=1,
-            include_vector=True
-        )
-        
-        if inserted_student.objects:
-            student_obj = inserted_student.objects[0]
-            logger.info(f"Retrieved inserted student object: {student_obj}")
-            logger.info(f"Vector property: {student_obj.vector}")
-            if student_obj.vector:
-                logger.info("Vector was successfully generated")
-                # Log all available vector properties
-                logger.info(f"Available vector properties: {list(student_obj.vector.keys())}")
-                if "default" in student_obj.vector:
-                    logger.info(f"Vector length: {len(student_obj.vector['default'])}")
-                    logger.info("Vector was successfully generated and stored")
+            # Verify the vector was generated
+            logger.info("Verifying vector generation...")
+            inserted_student = visiting_student_collection.query.fetch_objects(
+                filters=Filter.by_property("email").equal(student.email),
+                limit=1,
+                include_vector=True
+            )
+            
+            if inserted_student.objects:
+                student_obj = inserted_student.objects[0]
+                logger.info(f"Retrieved inserted student object: {student_obj}")
+                logger.info(f"Vector property: {student_obj.vector}")
+                if student_obj.vector:
+                    logger.info("Vector was successfully generated")
+                    # Log all available vector properties
+                    logger.info(f"Available vector properties: {list(student_obj.vector.keys())}")
+                    if "default" in student_obj.vector:
+                        logger.info(f"Vector length: {len(student_obj.vector['default'])}")
+                        logger.info("Vector was successfully generated and stored")
+                    else:
+                        logger.warning("default vector not found in vector property")
                 else:
-                    logger.warning("default vector not found in vector property")
+                    logger.error("Vector is empty or not generated")
             else:
-                logger.error("Vector is empty or not generated")
-        else:
-            logger.error("Could not retrieve inserted student")
+                logger.error("Could not retrieve inserted student")
 
-        # Log the inserted student object
-        logger.info("Vector property generated successfully")
-        
-        return {
-            "status": "success",
-            "message": "Visiting student registered successfully",
-            "student_id": result
-        }
+            # Log the inserted student object
+            logger.info("Vector property generated successfully")
+            
+            return {
+                "status": "success",
+                "message": "Visiting student registered successfully",
+                "student_id": result
+            }
 
     except Exception as e:
         logger.error(f"Error creating visiting student: {e}", exc_info=True)
@@ -302,30 +329,31 @@ async def get_visiting_students():
     """Retrieve all visiting students from the database."""
     try:
         logger.info("Fetching all visiting students")
-        visiting_student_collection = client.collections.get("VisitingStudent")
-        
-        # Query all visiting students
-        response = visiting_student_collection.query.fetch_objects(
-            limit=100,
-            return_properties=[
-                "name", "email", "gender", "grade", "residential_status",
-                "city_country", "sports", "extracurricular_activities",
-                "academic_interests", "additional_information", "race",
-                "tour_datetime"
-            ]
-        )
+        with get_weaviate_client() as client:
+            visiting_student_collection = client.collections.get("VisitingStudent")
+            
+            # Query all visiting students
+            response = visiting_student_collection.query.fetch_objects(
+                limit=100,
+                return_properties=[
+                    "name", "email", "gender", "grade", "residential_status",
+                    "city_country", "sports", "extracurricular_activities",
+                    "academic_interests", "additional_information", "race",
+                    "tour_datetime"
+                ]
+            )
 
-        students = []
-        if response and hasattr(response, 'objects'):
-            for obj in response.objects:
-                students.append(obj.properties)
-        
-        logger.info(f"Retrieved {len(students)} visiting students")
+            students = []
+            if response and hasattr(response, 'objects'):
+                for obj in response.objects:
+                    students.append(obj.properties)
+            
+            logger.info(f"Retrieved {len(students)} visiting students")
 
-        return {
-            "status": "success",
-            "students": students
-        }
+            return {
+                "status": "success",
+                "students": students
+            }
 
     except Exception as e:
         logger.error(f"Error retrieving visiting students: {e}", exc_info=True)
@@ -336,31 +364,32 @@ async def get_unmatched_students():
     """Retrieve all unmatched visiting students from the database."""
     try:
         logger.info("Fetching unmatched visiting students")
-        visiting_student_collection = client.collections.get("VisitingStudent")
-        
-        # Query unmatched visiting students
-        response = visiting_student_collection.query.fetch_objects(
-            filters=Filter.by_property("is_matched").equal(0),  # Use 0 for unmatched
-            limit=100,
-            return_properties=[
-                "name", "email", "gender", "grade", "residential_status",
-                "city_country", "sports", "extracurricular_activities",
-                "academic_interests", "additional_information", "race",
-                "tour_datetime", "is_matched", "matched_tour_guide"
-            ]
-        )
+        with get_weaviate_client() as client:
+            visiting_student_collection = client.collections.get("VisitingStudent")
+            
+            # Query unmatched visiting students
+            response = visiting_student_collection.query.fetch_objects(
+                filters=Filter.by_property("is_matched").equal(0),  # Use 0 for unmatched
+                limit=100,
+                return_properties=[
+                    "name", "email", "gender", "grade", "residential_status",
+                    "city_country", "sports", "extracurricular_activities",
+                    "academic_interests", "additional_information", "race",
+                    "tour_datetime", "is_matched", "matched_tour_guide"
+                ]
+            )
 
-        students = []
-        if response and hasattr(response, 'objects'):
-            for obj in response.objects:
-                students.append(obj.properties)
-        
-        logger.info(f"Retrieved {len(students)} unmatched visiting students")
+            students = []
+            if response and hasattr(response, 'objects'):
+                for obj in response.objects:
+                    students.append(obj.properties)
+            
+            logger.info(f"Retrieved {len(students)} unmatched visiting students")
 
-        return {
-            "status": "success",
-            "students": students
-        }
+            return {
+                "status": "success",
+                "students": students
+            }
 
     except Exception as e:
         logger.error(f"Error retrieving unmatched visiting students: {e}", exc_info=True)
@@ -371,67 +400,32 @@ async def get_matched_students():
     """Retrieve all matched visiting students from the database."""
     try:
         logger.info("Fetching matched visiting students")
-        visiting_student_collection = client.collections.get("VisitingStudent")
-        
-        # Query matched visiting students
-        response = visiting_student_collection.query.fetch_objects(
-            filters=Filter.by_property("is_matched").equal(1),  # Use 1 for matched
-            limit=100,
-            return_properties=[
-                "name", "email", "gender", "grade", "residential_status",
-                "city_country", "sports", "extracurricular_activities",
-                "academic_interests", "additional_information", "race",
-                "tour_datetime", "is_matched", "matched_tour_guide"
-            ]
-        )
+        with get_weaviate_client() as client:
+            visiting_student_collection = client.collections.get("VisitingStudent")
+            
+            # Query matched visiting students
+            response = visiting_student_collection.query.fetch_objects(
+                filters=Filter.by_property("is_matched").equal(1),  # Use 1 for matched
+                limit=100,
+                return_properties=[
+                    "name", "email", "gender", "grade", "residential_status",
+                    "city_country", "sports", "extracurricular_activities",
+                    "academic_interests", "additional_information", "race",
+                    "tour_datetime", "is_matched", "matched_tour_guide"
+                ]
+            )
 
-        students = []
-        tour_guides_client = None
-        if response and hasattr(response, 'objects'):
-            for obj in response.objects:
-                student_data = obj.properties
-                
-                # If there's a matched tour guide, fetch their name
-                if student_data.get("matched_tour_guide"):
-                    try:
-                        # Connect to the tour guides database
-                        tour_guides_client = weaviate.connect_to_weaviate_cloud(
-                            cluster_url=os.environ["TOUR_GUIDE_WEAVIATE_URL"],
-                            auth_credentials=Auth.api_key(os.environ["TOUR_GUIDE_WEAVIATE_API_KEY"]),
-                            headers={"X-OpenAI-Api-Key": os.environ.get("OPENAI_API_KEY")}
-                        )
-                        
-                        # Get the tour guide collection
-                        tour_guide_collection = tour_guides_client.collections.get("TourGuide")
-                        
-                        # Fetch the tour guide by UUID
-                        tour_guide = tour_guide_collection.query.fetch_objects(
-                            filters=Filter.by_id().equal(student_data["matched_tour_guide"]),
-                            limit=1
-                        )
-                        
-                        # If tour guide found, add their name to the student data
-                        if tour_guide and hasattr(tour_guide, 'objects') and tour_guide.objects:
-                            tour_guide_name = tour_guide.objects[0].properties.get("student_id", "Unknown")
-                            student_data["matched_tour_guide_name"] = tour_guide_name
-                        else:
-                            student_data["matched_tour_guide_name"] = "Unknown"
-                    except Exception as e:
-                        logger.error(f"Error fetching tour guide name: {e}")
-                        student_data["matched_tour_guide_name"] = "Unknown"
-                
-                students.append(student_data)
-        
-        logger.info(f"Retrieved {len(students)} matched visiting students")
+            students = []
+            if response and hasattr(response, 'objects'):
+                for obj in response.objects:
+                    students.append(obj.properties)
+            
+            logger.info(f"Retrieved {len(students)} matched visiting students")
 
-        # Close the tour guides client if it was created
-        if tour_guides_client:
-            tour_guides_client.close()
-
-        return {
-            "status": "success",
-            "students": students
-        }
+            return {
+                "status": "success",
+                "students": students
+            }
 
     except Exception as e:
         logger.error(f"Error retrieving matched visiting students: {e}", exc_info=True)
@@ -442,35 +436,37 @@ async def update_student_match(student_email: str, tour_guide_id: str):
     """Update a visiting student's match status with a tour guide."""
     try:
         logger.info(f"Updating match status for student {student_email} with tour guide {tour_guide_id}")
-        visiting_student_collection = client.collections.get("VisitingStudent")
         
-        # Find the student by email
-        student = visiting_student_collection.query.fetch_objects(
-            filters=Filter.by_property("email").equal(student_email),
-            limit=1
-        )
-        
-        if not student.objects:
-            logger.error(f"Student not found with email: {student_email}")
-            raise HTTPException(status_code=404, detail="Visiting student not found")
-        
-        # Update the student's match status
-        student_obj = student.objects[0]
-        student_obj.properties["is_matched"] = 1  # Use 1 for matched
-        student_obj.properties["matched_tour_guide"] = tour_guide_id
-        
-        # Update the object in Weaviate
-        visiting_student_collection.data.update(
-            uuid=student_obj.uuid,
-            properties=student_obj.properties
-        )
-        
-        logger.info(f"Successfully updated match status for student {student_email}")
-        
-        return {
-            "status": "success",
-            "message": "Student match status updated successfully"
-        }
+        with get_weaviate_client() as client:
+            visiting_student_collection = client.collections.get("VisitingStudent")
+            
+            # Find the student by email
+            student = visiting_student_collection.query.fetch_objects(
+                filters=Filter.by_property("email").equal(student_email),
+                limit=1
+            )
+            
+            if not student.objects:
+                logger.error(f"Student not found with email: {student_email}")
+                raise HTTPException(status_code=404, detail="Visiting student not found")
+            
+            # Update the student's match status
+            student_obj = student.objects[0]
+            student_obj.properties["is_matched"] = 1  # Use 1 for matched
+            student_obj.properties["matched_tour_guide"] = tour_guide_id
+            
+            # Update the object in Weaviate
+            visiting_student_collection.data.update(
+                uuid=student_obj.uuid,
+                properties=student_obj.properties
+            )
+            
+            logger.info(f"Successfully updated match status for student {student_email}")
+            
+            return {
+                "status": "success",
+                "message": "Student match status updated successfully"
+            }
 
     except HTTPException:
         raise
@@ -484,35 +480,36 @@ async def delete_visiting_student(student_email: str):
     try:
         logger.info(f"Attempting to delete visiting student with email: {student_email}")
         
-        # Get the VisitingStudent collection
-        visiting_student_collection = client.collections.get("VisitingStudent")
-        logger.info("Successfully retrieved VisitingStudent collection")
-        
-        # Find the student by email
-        student = visiting_student_collection.query.fetch_objects(
-            filters=Filter.by_property("email").equal(student_email),
-            limit=1
-        )
-        logger.info(f"Query result: {student}")
-        
-        if not student.objects:
-            logger.error(f"Student not found with email: {student_email}")
-            raise HTTPException(status_code=404, detail="Visiting student not found")
-        
-        # Delete the student
-        student_uuid = student.objects[0].uuid
-        logger.info(f"Found student with UUID: {student_uuid}")
-        
-        # Use the correct method to delete the object
-        visiting_student_collection.data.delete_many(
-            where=Filter.by_property("email").equal(student_email)
-        )
-        logger.info(f"Successfully deleted visiting student with email: {student_email}")
-        
-        return {
-            "status": "success",
-            "message": "Visiting student deleted successfully"
-        }
+        with get_weaviate_client() as client:
+            # Get the VisitingStudent collection
+            visiting_student_collection = client.collections.get("VisitingStudent")
+            logger.info("Successfully retrieved VisitingStudent collection")
+            
+            # Find the student by email
+            student = visiting_student_collection.query.fetch_objects(
+                filters=Filter.by_property("email").equal(student_email),
+                limit=1
+            )
+            logger.info(f"Query result: {student}")
+            
+            if not student.objects:
+                logger.error(f"Student not found with email: {student_email}")
+                raise HTTPException(status_code=404, detail="Visiting student not found")
+            
+            # Delete the student
+            student_uuid = student.objects[0].uuid
+            logger.info(f"Found student with UUID: {student_uuid}")
+            
+            # Use the correct method to delete the object
+            visiting_student_collection.data.delete_many(
+                where=Filter.by_property("email").equal(student_email)
+            )
+            logger.info(f"Successfully deleted visiting student with email: {student_email}")
+            
+            return {
+                "status": "success",
+                "message": "Visiting student deleted successfully"
+            }
         
     except HTTPException:
         raise
@@ -525,35 +522,37 @@ async def unmatch_student(student_email: str):
     """Unmatch a visiting student, moving them back to the unmatched list."""
     try:
         logger.info(f"Unmatching student with email: {student_email}")
-        visiting_student_collection = client.collections.get("VisitingStudent")
         
-        # Find the student by email
-        student = visiting_student_collection.query.fetch_objects(
-            filters=Filter.by_property("email").equal(student_email),
-            limit=1
-        )
-        
-        if not student.objects:
-            logger.error(f"Student not found with email: {student_email}")
-            raise HTTPException(status_code=404, detail="Visiting student not found")
-        
-        # Update the student's match status
-        student_obj = student.objects[0]
-        student_obj.properties["is_matched"] = 0  # Set to unmatched (0)
-        student_obj.properties["matched_tour_guide"] = None  # Clear the matched tour guide
-        
-        # Update the object in Weaviate
-        visiting_student_collection.data.update(
-            uuid=student_obj.uuid,
-            properties=student_obj.properties
-        )
-        
-        logger.info(f"Successfully unmatched student {student_email}")
-        
-        return {
-            "status": "success",
-            "message": "Student unmatched successfully"
-        }
+        with get_weaviate_client() as client:
+            visiting_student_collection = client.collections.get("VisitingStudent")
+            
+            # Find the student by email
+            student = visiting_student_collection.query.fetch_objects(
+                filters=Filter.by_property("email").equal(student_email),
+                limit=1
+            )
+            
+            if not student.objects:
+                logger.error(f"Student not found with email: {student_email}")
+                raise HTTPException(status_code=404, detail="Visiting student not found")
+            
+            # Update the student's match status
+            student_obj = student.objects[0]
+            student_obj.properties["is_matched"] = 0  # Set to unmatched (0)
+            student_obj.properties["matched_tour_guide"] = None  # Clear the matched tour guide
+            
+            # Update the object in Weaviate
+            visiting_student_collection.data.update(
+                uuid=student_obj.uuid,
+                properties=student_obj.properties
+            )
+            
+            logger.info(f"Successfully unmatched student {student_email}")
+            
+            return {
+                "status": "success",
+                "message": "Student unmatched successfully"
+            }
 
     except HTTPException:
         raise
