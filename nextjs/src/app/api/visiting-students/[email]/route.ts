@@ -2,13 +2,14 @@ import { NextResponse } from 'next/server';
 
 export async function DELETE(
   request: Request,
-  { params }: { params: { email: string } }
+  context: { params: { email: string } }
 ) {
   try {
-    const email = decodeURIComponent(params.email);
-    console.log('Deleting visiting student with email:', email);
+    const { email } = context.params;
+    const decodedEmail = decodeURIComponent(email);
+    console.log('Deleting visiting student with email:', decodedEmail);
 
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/visiting-students/${email}`, {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/visiting-students/${decodedEmail}`, {
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',

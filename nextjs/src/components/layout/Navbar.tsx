@@ -30,12 +30,12 @@ export default function Navbar() {
             </svg>
             Update Tour Guide Database
           </Link>
-          <Link href="/visitingform" className="btn btn-ghost text-base-content hover:bg-base-content/10 transition-all duration-200 hover:scale-105 cursor-pointer">
+          {/* <Link href="/visitingform" className="btn btn-ghost text-base-content hover:bg-base-content/10 transition-all duration-200 hover:scale-105 cursor-pointer">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
             </svg>
             Register for Tour
-          </Link>
+          </Link> */}
         </div>
         <div className="flex-1 flex justify-end">
           <div className="dropdown dropdown-end">
