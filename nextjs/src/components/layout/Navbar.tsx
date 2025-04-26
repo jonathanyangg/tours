@@ -31,28 +31,22 @@ export default function Navbar() {
             </svg>
             Update Tour Guide Database
           </Link>
-          {/* <Link href="/visitingform" className="btn btn-ghost text-base-content hover:bg-base-content/10 transition-all duration-200 hover:scale-105 cursor-pointer">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-            </svg>
-            Register for Tour
-          </Link> */}
         </div>
         <div className="flex-1 flex justify-end">
           <div className="dropdown dropdown-end">
-            <div tabIndex={0} role="button" className="btn btn-ghost btn-circle avatar border border-base-300 hover:border-base-content/80 transition-all duration-200 hover:scale-105">
+            <div tabIndex={0} role="button" className="btn btn-ghost btn-circle avatar border border-base-300 hover:border-base-content/80 transition-all duration-300 hover:scale-105">
               <div className="w-10 rounded-full bg-white">
                 <div className="text-base-content flex items-center justify-center h-full font-normal">U</div>
               </div>
             </div>
-            <ul tabIndex={0} className="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-52 mt-2">
+            <ul tabIndex={0} className="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-40 mt-2">
               <li>
                 <form action={logout}>
-                  <button type="submit" className="w-full text-left">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <button type="submit" className="text-sm py-1.5 flex items-center text-gray-700 hover:text-red-500 transition-colors duration-300 group">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2 group-hover:-translate-x-0.5 group-hover:translate-y-0.5 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                     </svg>
-                    Logout
+                    <span className="group-hover:translate-x-0.5 transition-transform duration-300">Logout</span>
                   </button>
                 </form>
               </li>
