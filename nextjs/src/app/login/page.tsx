@@ -1,11 +1,11 @@
 'use client'
 
-import { useFormState } from 'react-dom'
+import { useActionState } from 'react'
 import { login } from './actions'
 
 export default function LoginPage() {
   const initialState = { error: null as string | null }
-  const [state, formAction] = useFormState(login, initialState)
+  const [state, formAction] = useActionState(login, initialState)
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-gray-100">

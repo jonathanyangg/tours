@@ -2,15 +2,9 @@ import Navbar from '@/components/layout/Navbar';
 import TourGuides from '@/components/tour-guides/TourGuides';
 import Footer from '@/components/layout/Footer';
 import { redirect } from 'next/navigation'
-import { createClient } from '@/utils/supabase/server'
+import { createClient } from '@/app/supabase/server'
 
-export default async function TourGuidesPage() {
-
-  const supabase = await createClient()
-  const { data, error } = await supabase.auth.getUser()
-  if (error || !data?.user) {
-    redirect('/login')
-  }
+export default function TourGuidesPage() {
   
   return (
     <div className="flex-1 bg-white flex flex-col min-h-screen">
