@@ -44,6 +44,8 @@ export default function DatabaseMatches() {
   const [expandedStudents, setExpandedStudents] = useState<Set<string>>(new Set());
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [matchingStudent, setMatchingStudent] = useState<string | null>(null);
+  const [isMatchingAll, setIsMatchingAll] = useState(false);
 
   useEffect(() => {
     fetchVisitingStudents();
@@ -117,6 +119,7 @@ export default function DatabaseMatches() {
   };
 
   const handleMatch = async (student: VisitingStudent) => {
+    setMatchingStudent(student.email);
     try {
       console.log('Matching student with details:', {
         name: student.name,
@@ -182,6 +185,8 @@ export default function DatabaseMatches() {
         [student.email]: err instanceof Error ? err.message : 'Unknown error'
       }));
       setExpandedStudents(prev => new Set([...prev, student.email]));
+    } finally {
+      setMatchingStudent(null);
     }
   };
 
@@ -297,6 +302,7 @@ export default function DatabaseMatches() {
   });
 
   const handleMatchAll = async () => {
+    setIsMatchingAll(true);
     try {
       // Process each student sequentially to avoid overwhelming the server
       for (const student of filteredStudents) {
@@ -341,6 +347,8 @@ export default function DatabaseMatches() {
     } catch (err) {
       console.error('Error in match all process:', err);
       toast.error('An error occurred while matching all students');
+    } finally {
+      setIsMatchingAll(false);
     }
   };
 
@@ -488,8 +496,16 @@ export default function DatabaseMatches() {
                             <button 
                               className="btn btn-success"
                               onClick={() => handleMatch(student)}
+                              disabled={matchingStudent === student.email}
                             >
-                              Match
+                              {matchingStudent === student.email ? (
+                                <>
+                                  <span className="loading loading-spinner loading-xs mr-2"></span>
+                                  Matching...
+                                </>
+                              ) : (
+                                'Match'
+                              )}
                             </button>
                             <button
                               className="btn bg-red-500 hover:bg-red-600 text-white"
@@ -560,8 +576,16 @@ export default function DatabaseMatches() {
             <button 
               className="btn btn-primary"
               onClick={handleMatchAll}
+              disabled={isMatchingAll}
             >
-              Match All
+              {isMatchingAll ? (
+                <>
+                  <span className="loading loading-spinner loading-xs mr-2"></span>
+                  Matching All...
+                </>
+              ) : (
+                'Match All'
+              )}
             </button>
           </div>
         </div>

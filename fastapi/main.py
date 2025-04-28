@@ -1,6 +1,9 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from api import tour_guides, visiting_students, matching
+from api import matching
+from fastapi.api.tour_guides import tour_guides
+
+from fastapi.api.visiting_students import visiting_students
 
 app = FastAPI()
 
