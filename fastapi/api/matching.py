@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 import logging
 import weaviate
@@ -8,6 +8,7 @@ from weaviate.classes.query import MetadataQuery
 from contextlib import contextmanager
 from dotenv import load_dotenv
 import os
+from .auth import get_current_user
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -83,7 +84,7 @@ def get_visiting_students_client():
             logger.info("Closed Visiting Students Weaviate connection")
 
 @router.post("/match-tour-guides-manual")
-async def match_tour_guides_manual(request: MatchingRequest):
+async def match_tour_guides_manual(request: MatchingRequest, user=Depends(get_current_user)):
     """Find the best matching tour guides based on the provided criteria."""
     try:
         logger.info(f"Received matching request: {request}")

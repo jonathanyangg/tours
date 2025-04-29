@@ -5,6 +5,7 @@ from .visiting_students.visiting_students import router as visiting_students_rou
 from .tour_guides.tour_guide_deletion import router as tour_guide_deletion_router
 from .visiting_students.visiting_student_deletion import router as visiting_student_deletion_router
 from .matching import router as matching_router
+from .test_protected import router as test_protected_router
 
 app = FastAPI()
 
@@ -28,6 +29,9 @@ app.include_router(visiting_student_deletion_router, prefix="/api", tags=["visit
 
 # Include the matching router
 app.include_router(matching_router, prefix="/api", tags=["matching"])
+
+# Include the test protected routes
+app.include_router(test_protected_router, prefix="/api", tags=["test-auth"])
 
 @app.get("/")
 def health_check():
