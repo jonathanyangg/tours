@@ -30,29 +30,30 @@ def get_token_and_test():
         print(f"\nObtained token: {access_token[:10]}...{access_token[-10:]}")
         
         # Generate curl command
-        curl_command = f'curl -X GET http://localhost:8000/api/test-auth -H "Authorization: Bearer {access_token}"'
+        curl_command = f'curl -X GET http://localhost:8000/api/user-credentials -H "Authorization: Bearer {access_token}"'
         print("\n----- CURL COMMAND TO COPY -----")
         print(curl_command)
         print("--------------------------------")
         
         # Ask if user wants to test automatically
-        auto_test = input("\nDo you want to test the endpoint now? (y/n): ")
-        if auto_test.lower() == 'y':
-            # Test the protected endpoint
+        which_endpoint = input("\nWhich endpoint do you want to test? (1)test-auth (2)user-credentials): ")
+        if which_endpoint == "1":
             api_url = "http://localhost:8000/api/test-auth"
-            headers = {
-                "Authorization": f"Bearer {access_token}",
-                "Content-Type": "application/json"
-            }
-            
-            print("\nTesting the protected endpoint...")
-            response = requests.get(api_url, headers=headers)
-            
-            print(f"\nStatus Code: {response.status_code}")
-            print("Response:")
-            print(json.dumps(response.json(), indent=2))
         else:
-            print("\nYou can use the curl command above to test the endpoint manually.")
+            api_url = "http://localhost:8000/api/user-credentials"
+
+        headers = {
+            "Authorization": f"Bearer {access_token}",
+            "Content-Type": "application/json"
+        }
+        
+        print("\nTesting the protected endpoint...")
+        response = requests.get(api_url, headers=headers)
+        
+        print(f"\nStatus Code: {response.status_code}")
+        print("Response:")
+        print(json.dumps(response.json(), indent=2))
+       
             
     except Exception as e:
         print(f"\n❌ Error: {str(e)}")

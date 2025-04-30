@@ -4,11 +4,11 @@ from supabase import create_client, Client
 import os
 
 # Initialize Supabase client
-SUPABASE_URL = os.environ["NEXT_PUBLIC_SUPABASE_URL"]
-SUPABASE_KEY = os.environ["NEXT_PUBLIC_SUPABASE_ANON_KEY"]
+NEXT_PUBLIC_SUPABASE_URL = os.environ["NEXT_PUBLIC_SUPABASE_URL"]
+NEXT_PUBLIC_SUPABASE_ANON_KEY = os.environ["NEXT_PUBLIC_SUPABASE_ANON_KEY"]
 
 # Create a global supabase client instance
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+supabase = create_client(NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY)
 
 # Set up the HTTP bearer scheme for token extraction
 bearer_scheme = HTTPBearer()
@@ -27,6 +27,16 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(b
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid token or user not found"
             )
+        
+        # Create a session object to simulate the same structure as sign_in
+        # This helps maintain consistent behavior with email_supabase.py
+        class Session:
+            def __init__(self, access_token):
+                self.access_token = access_token
+                # We don't have refresh token from JWT auth, use access token as a fallback
+                self.refresh_token = access_token
+        
+        user.session = Session(token)
         return user
     except Exception as e:
         raise HTTPException(

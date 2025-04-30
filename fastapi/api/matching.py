@@ -44,7 +44,7 @@ class MatchingRequest(BaseModel):
     time_period: str = None
 
 @contextmanager
-def get_weaviate_client():
+def get_weaviate_client(tour_guide_weaviate_url, tour_guide_weaviate_api_key):
     """Context manager for Weaviate client connections for tour guides."""
     client = None
     try:
@@ -84,7 +84,7 @@ def get_visiting_students_client():
             logger.info("Closed Visiting Students Weaviate connection")
 
 @router.post("/match-tour-guides-manual")
-async def match_tour_guides_manual(request: MatchingRequest, user=Depends(get_current_user)):
+def match_tour_guides_manual(request: MatchingRequest):
     """Find the best matching tour guides based on the provided criteria."""
     try:
         logger.info(f"Received matching request: {request}")
