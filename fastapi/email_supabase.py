@@ -5,11 +5,13 @@ from dotenv import load_dotenv
 from supabase import create_client, Client
 import json
 
+load_dotenv()
+
 # Get Supabase credentials from environment variables
 NEXT_PUBLIC_SUPABASE_URL = os.environ.get("NEXT_PUBLIC_SUPABASE_URL")
 NEXT_PUBLIC_SUPABASE_ANON_KEY = os.environ.get("NEXT_PUBLIC_SUPABASE_ANON_KEY")
 
-load_dotenv()
+
 # Function to initialize Supabase client
 def init_supabase():
     url = NEXT_PUBLIC_SUPABASE_URL
