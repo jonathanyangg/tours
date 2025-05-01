@@ -41,6 +41,14 @@ export default function Navbar() {
             </div>
             <ul tabIndex={0} className="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-40 mt-2">
               <li>
+                <Link href="/credentials" className="text-sm py-1.5 flex items-center text-gray-700 hover:text-blue-500 transition-colors duration-300 group">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2 group-hover:translate-x-0.5 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                  </svg>
+                  <span className="group-hover:translate-x-0.5 transition-transform duration-300">API Credentials</span>
+                </Link>
+              </li>
+              <li>
                 <form action={logout}>
                   <button type="submit" className="text-sm py-1.5 flex items-center text-gray-700 hover:text-red-500 transition-colors duration-300 group">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2 group-hover:-translate-x-0.5 group-hover:translate-y-0.5 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">

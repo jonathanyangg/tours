@@ -15,10 +15,7 @@ load_dotenv()
 bearer_scheme = HTTPBearer()
 
 async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme)):
-    """
-    Verify the JWT token using Supabase's get_user method.
-    This ensures the token is valid and returns the user information.
-    """
+    #CITATION: https://supabase.com/docs/reference/python/auth-getuser
     token = credentials.credentials
     try:
         # Use Supabase client to verify the token and get user info
