@@ -34,7 +34,7 @@ export default function LoginPage() {
               </label>
               <input
                 id="email"
-                name="email"
+                name="email" 
                 type="email"
                 required
                 className="block w-full px-4 py-3 rounded-lg border border-gray-200 transition duration-150 ease-in-out"

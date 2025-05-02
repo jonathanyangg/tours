@@ -59,7 +59,7 @@ export default function Navbar() {
             <div 
               tabIndex={0} 
               role="button" 
-              className="flex items-center justify-center h-9 w-9 rounded-full bg-primary/10 hover:bg-primary/15 transition-all duration-200 ring-2 ring-primary/20 hover:ring-primary/30 cursor-pointer"
+              className="flex items-center justify-center h-9 w-9 rounded-full bg-primary/10 hover:bg-primary/20 hover:scale-105 transition-all duration-200 ring-2 ring-primary/20 hover:ring-primary/30 cursor-pointer"
             >
               <span className="text-primary text-sm font-medium">{userInitial}</span>
             </div>
