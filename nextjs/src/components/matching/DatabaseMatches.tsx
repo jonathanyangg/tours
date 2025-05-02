@@ -1,7 +1,12 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { matchTourGuidesFromDatabase, updateStudentMatch } from '@/services/api';
+import { 
+  matchTourGuidesFromDatabase, 
+  updateStudentMatch, 
+  getUnmatchedStudents,
+  deleteVisitingStudent 
+} from '@/services/api';
 import { toast } from 'react-hot-toast';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
@@ -72,22 +77,7 @@ export default function DatabaseMatches() {
   const fetchVisitingStudents = async () => {
     try {
       console.log('Fetching unmatched visiting students from API');
-      const response = await fetch('/api/visiting-students/unmatched');
-      console.log('Response status:', response.status);
-      
-      // Check if response is JSON
-      const contentType = response.headers.get('content-type');
-      if (!contentType || !contentType.includes('application/json')) {
-        throw new Error('Server returned non-JSON response');
-      }
-      
-      const data = await response.json();
-      
-      if (!response.ok) {
-        console.error('Error response:', data);
-        throw new Error(data.detail || 'Failed to fetch visiting students');
-      }
-      
+      const data = await getUnmatchedStudents();
       console.log('Success response:', data);
       
       if (data.students) {
@@ -252,17 +242,9 @@ export default function DatabaseMatches() {
     setIsDeleting(email);
     try {
       console.log('Attempting to delete student:', email);
-      const response = await fetch(`/api/visiting-students/${encodeURIComponent(email)}`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+      const data = await deleteVisitingStudent(email);
       
-      const data = await response.json();
-      console.log('Delete response:', { status: response.status, data });
-      
-      if (response.ok && data.status === 'success') {
+      if (data.status === 'success') {
         toast.success(data.message || 'Student deleted successfully');
         setVisitingStudents(prev => prev.filter(student => student.email !== email));
       } else {

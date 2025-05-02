@@ -13,9 +13,13 @@ export async function uploadTourGuides(file: File) {
   formData.append('file', file);
 
   try {
+    const token = await getToken();
     const response = await fetch(`${API_BASE_URL}/upload-tour-guides`, {
       method: 'POST',
       body: formData,
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
     });
 
     if (!response.ok) {
@@ -81,10 +85,12 @@ export async function matchTourGuides(matchData: {
   time_period?: string;
 }) {
   try {
+    const token = await getToken();
     const response = await fetch(`${API_BASE_URL}/match-tour-guides-manual`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
       },
       body: JSON.stringify(matchData),
     });
@@ -123,13 +129,14 @@ export async function matchTourGuidesFromDatabase(matchData: {
     console.log('Making request to match tour guides from database:', {
       url: `${API_BASE_URL}/match-tour-guides-from-database`,
       method: 'POST',
-      data: JSON.stringify(matchData, null, 2)
+      data: JSON.stringify(matchData, null, 2),
     });
-
+    const token = await getToken();
     const response = await fetch(`${API_BASE_URL}/match-tour-guides-from-database`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
       },
       body: JSON.stringify(matchData),
     });
@@ -164,7 +171,14 @@ export async function matchTourGuidesFromDatabase(matchData: {
  */
 export async function checkHealth() {
   try {
-    const response = await fetch(`${API_BASE_URL}/health`);
+    const token = await getToken();
+    const response = await fetch(`${API_BASE_URL}/health`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+    });
 
     if (!response.ok) {
       throw new Error('Backend health check failed');
@@ -183,7 +197,14 @@ export async function checkHealth() {
  */
 export async function testWeaviateConnection() {
   try {
-    const response = await fetch(`${API_BASE_URL}/test-weaviate`);
+    const token = await getToken();
+    const response = await fetch(`${API_BASE_URL}/test-weaviate`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+    });
 
     if (!response.ok) {
       throw new Error('Weaviate connection test failed');
@@ -202,10 +223,12 @@ export async function testWeaviateConnection() {
  */
 export async function getUnmatchedStudents() {
   try {
+    const token = await getToken();
     const response = await fetch(`${API_BASE_URL}/visiting-students/unmatched`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
       },
     });
 
@@ -227,10 +250,12 @@ export async function getUnmatchedStudents() {
  */
 export async function getMatchedStudents() {
   try {
+    const token = await getToken();
     const response = await fetch(`${API_BASE_URL}/visiting-students/matched`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
       },
     });
 
@@ -254,11 +279,13 @@ export async function getMatchedStudents() {
  */
 export async function updateStudentMatch(studentEmail: string, tourGuideId: string) {
   try {
+    const token = await getToken();
     const response = await fetch(`${API_BASE_URL}/visiting-students/${studentEmail}/match?tour_guide_id=${tourGuideId}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-      }
+        'Authorization': `Bearer ${token}`
+      },
     });
 
     if (!response.ok) {
@@ -280,10 +307,12 @@ export async function updateStudentMatch(studentEmail: string, tourGuideId: stri
  */
 export async function unmatchStudent(studentEmail: string) {
   try {
+    const token = await getToken();
     const response = await fetch(`${API_BASE_URL}/visiting-students/${encodeURIComponent(studentEmail)}/unmatch`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
       },
     });
 
@@ -322,6 +351,34 @@ export async function getUserCredentials(token: string) {
     return await response.json();
   } catch (error) {
     console.error('Error fetching user credentials:', error);
+    throw error;
+  }
+}
+
+/**
+ * Delete a visiting student
+ * @param email The email of the student to delete
+ * @returns The response from the server
+ */
+export async function deleteVisitingStudent(email: string) {
+  try {
+    const token = await getToken();
+    const response = await fetch(`${API_BASE_URL}/visiting-students/${encodeURIComponent(email)}`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || 'Failed to delete visiting student');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error deleting visiting student:', error);
     throw error;
   }
 } 

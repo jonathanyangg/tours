@@ -8,7 +8,7 @@ from weaviate.classes.query import MetadataQuery
 from contextlib import contextmanager
 from dotenv import load_dotenv
 import os
-from .auth import get_current_user
+from .auth import get_token_then_APIS
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -17,17 +17,6 @@ logger = logging.getLogger(__name__)
 load_dotenv()
 
 router = APIRouter()
-
-# Environment variables
-openai_key = os.environ.get("OPENAI_API_KEY")
-tour_guide_weaviate_url = os.environ["TOUR_GUIDE_WEAVIATE_URL"]
-tour_guide_weaviate_api_key = os.environ["TOUR_GUIDE_WEAVIATE_API_KEY"]
-visiting_student_weaviate_url = os.environ["VISITING_STUDENT_WEAVIATE_URL"]
-visiting_student_weaviate_api_key = os.environ["VISITING_STUDENT_WEAVIATE_API_KEY"]
-
-headers = {
-    "X-OpenAI-Api-Key": openai_key,
-}
 
 # Define the matching request models
 class MatchingRequest(BaseModel):
@@ -44,47 +33,30 @@ class MatchingRequest(BaseModel):
     time_period: str = None
 
 @contextmanager
-def get_weaviate_client(tour_guide_weaviate_url, tour_guide_weaviate_api_key):
-    """Context manager for Weaviate client connections for tour guides."""
+def get_weaviate_client(weaviate_url, weaviate_api_key, openai_api_key, client_type="tour_guides"):
+    """Context manager for Weaviate client connections."""
     client = None
+    headers = {
+        "X-OpenAI-Api-Key": openai_api_key,
+    }
     try:
         client = weaviate.connect_to_weaviate_cloud(
-            cluster_url=tour_guide_weaviate_url,
-            auth_credentials=Auth.api_key(tour_guide_weaviate_api_key),
+            cluster_url=weaviate_url,
+            auth_credentials=Auth.api_key(weaviate_api_key),
             headers=headers
         )
-        logger.info("Successfully connected to Tour Guides Weaviate")
+        logger.info(f"Successfully connected to {client_type} Weaviate")
         yield client
     except Exception as e:
-        logger.error(f"Failed to connect to Tour Guides Weaviate: {e}")
+        logger.error(f"Failed to connect to {client_type} Weaviate: {e}")
         raise
     finally:
         if client:
             client.close()
-            logger.info("Closed Tour Guides Weaviate connection")
-
-@contextmanager
-def get_visiting_students_client():
-    """Context manager for Weaviate client connections for visiting students."""
-    client = None
-    try:
-        client = weaviate.connect_to_weaviate_cloud(
-            cluster_url=visiting_student_weaviate_url,
-            auth_credentials=Auth.api_key(visiting_student_weaviate_api_key),
-            headers=headers
-        )
-        logger.info("Successfully connected to Visiting Students Weaviate")
-        yield client
-    except Exception as e:
-        logger.error(f"Failed to connect to Visiting Students Weaviate: {e}")
-        raise
-    finally:
-        if client:
-            client.close()
-            logger.info("Closed Visiting Students Weaviate connection")
+            logger.info(f"Closed {client_type} Weaviate connection")
 
 @router.post("/match-tour-guides-manual")
-def match_tour_guides_manual(request: MatchingRequest):
+def match_tour_guides_manual(request: MatchingRequest, api_keys=Depends(get_token_then_APIS)):
     """Find the best matching tour guides based on the provided criteria."""
     try:
         logger.info(f"Received matching request: {request}")
@@ -107,7 +79,11 @@ def match_tour_guides_manual(request: MatchingRequest):
         text_representation = ", ".join(text_fields)
         logger.info(f"Generated text representation: {text_representation}")
         
-        with get_weaviate_client(tour_guide_weaviate_url, tour_guide_weaviate_api_key) as client:
+        tour_guides_weaviate_url = api_keys["tour_guides_weaviate_url"]
+        tour_guides_weaviate_api_key = api_keys["tour_guides_weaviate_api_key"]
+        openai_api_key = api_keys["openai_api_key"]
+        
+        with get_weaviate_client(tour_guides_weaviate_url, tour_guides_weaviate_api_key, openai_api_key, "tour_guides") as client:
             # Get the TourGuide collection
             tour_guide_collection = client.collections.get("TourGuide")
             
@@ -159,18 +135,24 @@ def match_tour_guides_manual(request: MatchingRequest):
                     "message": "No matching tour guides found with the same gender and grade",
                     "matches": []
                 }
-                
+
     except Exception as e:
         logger.error(f"Error matching tour guides: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/match-tour-guides-from-database")
-async def match_tour_guides_from_database(request: MatchingRequest):
+async def match_tour_guides_from_database(request: MatchingRequest, api_keys=Depends(get_token_then_APIS)):
     """Find the best matching tour guides based on the provided criteria using database data."""
     try:
         logger.info(f"Received matching request: {request}")
         
-        with get_visiting_students_client() as client:
+        visiting_students_weaviate_url = api_keys["visiting_students_weaviate_url"]
+        visiting_students_weaviate_api_key = api_keys["visiting_students_weaviate_api_key"]
+        tour_guides_weaviate_url = api_keys["tour_guides_weaviate_url"]
+        tour_guides_weaviate_api_key = api_keys["tour_guides_weaviate_api_key"]
+        openai_api_key = api_keys["openai_api_key"]
+        
+        with get_weaviate_client(visiting_students_weaviate_url, visiting_students_weaviate_api_key, openai_api_key, "visiting_students") as client:
             # Get the VisitingStudent collection
             visiting_student_collection = client.collections.get("VisitingStudent")
             
@@ -207,7 +189,7 @@ async def match_tour_guides_from_database(request: MatchingRequest):
             logger.info(f"Generated text representation: {text_representation}")
             
             # Get tour guides client for matching
-            with get_weaviate_client(tour_guide_weaviate_url, tour_guide_weaviate_api_key) as tour_guides_client:
+            with get_weaviate_client(tour_guides_weaviate_url, tour_guides_weaviate_api_key, openai_api_key, "tour_guides") as tour_guides_client:
                 # Get the TourGuide collection
                 tour_guide_collection = tour_guides_client.collections.get("TourGuide")
                 

@@ -19,7 +19,7 @@ def get_token_and_test():
     email = os.environ.get("email")
     password = os.environ.get("password")
 
-    email = "joemeets333@gmail.com"
+    email = "jonathan.yang.x@gmail.com"
     password = "Tc13042381!"
     
     try:

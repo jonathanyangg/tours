@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from typing import Optional
 import weaviate
@@ -11,6 +11,7 @@ import logging
 import json
 import weaviate.collections.classes.config as wvc
 from contextlib import contextmanager
+from ..auth import get_token_then_APIS
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -24,25 +25,17 @@ router = APIRouter()
 EMBEDDING_MODEL = "text-embedding-3-large"
 BATCH_SIZE = 100
 
-openai_key = os.environ.get("OPENAI_API_KEY")
-weaviate_url = os.environ["VISITING_STUDENT_WEAVIATE_URL"]
-weaviate_api_key = os.environ["VISITING_STUDENT_WEAVIATE_API_KEY"]
-
-logger.info(f"Weaviate URL: {weaviate_url}")
-logger.info(f"OpenAI API Key available: {openai_key is not None}")
-
-headers = {
-    "X-OpenAI-Api-Key": openai_key,
-}
-
 @contextmanager
-def get_weaviate_client():
+def get_weaviate_client(visiting_students_weaviate_url=None, visiting_students_weaviate_api_key=None, openai_api_key=None):
     """Context manager for Weaviate client connections."""
     client = None
+    headers = {
+        "X-OpenAI-Api-Key": openai_api_key,
+    }
     try:
         client = weaviate.connect_to_weaviate_cloud(
-            cluster_url=weaviate_url,
-            auth_credentials=Auth.api_key(weaviate_api_key),
+            cluster_url=visiting_students_weaviate_url,
+            auth_credentials=Auth.api_key(visiting_students_weaviate_api_key),
             headers=headers
         )
         logger.info("Successfully connected to Weaviate")
@@ -71,10 +64,10 @@ class VisitingStudent(BaseModel):
     is_matched: Optional[bool] = False
     matched_tour_guide: Optional[str] = None
 
-def create_schema():
+def create_schema(visiting_students_weaviate_url=None, visiting_students_weaviate_api_key=None, openai_api_key=None):
     """Create the Weaviate schema for visiting students if it doesn't exist."""
     try:
-        with get_weaviate_client() as client:
+        with get_weaviate_client(visiting_students_weaviate_url, visiting_students_weaviate_api_key, openai_api_key) as client:
             # List existing collections (schemas)
             existing_collections = client.collections.list_all()
             logger.info(f"Existing collections: {existing_collections}")
@@ -224,13 +217,16 @@ def create_schema():
         raise
 
 @router.post("/visiting-students")
-async def create_visiting_student(student: VisitingStudent):
+async def create_visiting_student(student: VisitingStudent, api_keys=Depends(get_token_then_APIS)):
     """Create a new visiting student record and store it in Weaviate."""
     try:
         logger.info(f"Received visiting student data: {json.dumps(student.dict(), indent=2)}")
+        visiting_students_weaviate_url = api_keys["visiting_students_weaviate_url"]
+        visiting_students_weaviate_api_key = api_keys["visiting_students_weaviate_api_key"]
+        openai_api_key = api_keys["openai_api_key"]
         
         # Ensure the schema exists
-        create_schema()
+        create_schema(visiting_students_weaviate_url, visiting_students_weaviate_api_key, openai_api_key)
 
         # Create text representation for vector search
         text_fields = []
@@ -255,7 +251,7 @@ async def create_visiting_student(student: VisitingStudent):
         # Log that vector was generated
         logger.info("Vector property generated successfully")
         
-        with get_weaviate_client() as client:
+        with get_weaviate_client(visiting_students_weaviate_url, visiting_students_weaviate_api_key, openai_api_key) as client:
             # Get the VisitingStudent collection
             visiting_student_collection = client.collections.get("VisitingStudent")
             logger.info("Retrieved VisitingStudent collection")
@@ -325,11 +321,15 @@ async def create_visiting_student(student: VisitingStudent):
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/visiting-students")
-async def get_visiting_students():
+async def get_visiting_students(api_keys=Depends(get_token_then_APIS)):
     """Retrieve all visiting students from the database."""
     try:
         logger.info("Fetching all visiting students")
-        with get_weaviate_client() as client:
+        visiting_students_weaviate_url = api_keys["visiting_students_weaviate_url"]
+        visiting_students_weaviate_api_key = api_keys["visiting_students_weaviate_api_key"]
+        openai_api_key = api_keys["openai_api_key"]
+        
+        with get_weaviate_client(visiting_students_weaviate_url, visiting_students_weaviate_api_key, openai_api_key) as client:
             visiting_student_collection = client.collections.get("VisitingStudent")
             
             # Query all visiting students
@@ -360,11 +360,15 @@ async def get_visiting_students():
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/visiting-students/unmatched")
-async def get_unmatched_students():
+async def get_unmatched_students(api_keys=Depends(get_token_then_APIS)):
     """Retrieve all unmatched visiting students from the database."""
     try:
         logger.info("Fetching unmatched visiting students")
-        with get_weaviate_client() as client:
+        visiting_students_weaviate_url = api_keys["visiting_students_weaviate_url"]
+        visiting_students_weaviate_api_key = api_keys["visiting_students_weaviate_api_key"]
+        openai_api_key = api_keys["openai_api_key"]
+        
+        with get_weaviate_client(visiting_students_weaviate_url, visiting_students_weaviate_api_key, openai_api_key) as client:
             visiting_student_collection = client.collections.get("VisitingStudent")
             
             # Query unmatched visiting students
@@ -396,11 +400,15 @@ async def get_unmatched_students():
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/visiting-students/matched")
-async def get_matched_students():
+async def get_matched_students(api_keys=Depends(get_token_then_APIS)):
     """Retrieve all matched visiting students from the database."""
     try:
         logger.info("Fetching matched visiting students")
-        with get_weaviate_client() as client:
+        visiting_students_weaviate_url = api_keys["visiting_students_weaviate_url"]
+        visiting_students_weaviate_api_key = api_keys["visiting_students_weaviate_api_key"]
+        openai_api_key = api_keys["openai_api_key"]
+        
+        with get_weaviate_client(visiting_students_weaviate_url, visiting_students_weaviate_api_key, openai_api_key) as client:
             visiting_student_collection = client.collections.get("VisitingStudent")
             
             # Query matched visiting students
@@ -432,12 +440,15 @@ async def get_matched_students():
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/visiting-students/{student_email}/match")
-async def update_student_match(student_email: str, tour_guide_id: str):
+async def update_student_match(student_email: str, tour_guide_id: str, api_keys=Depends(get_token_then_APIS)):
     """Update a visiting student's match status with a tour guide."""
     try:
         logger.info(f"Updating match status for student {student_email} with tour guide {tour_guide_id}")
+        visiting_students_weaviate_url = api_keys["visiting_students_weaviate_url"]
+        visiting_students_weaviate_api_key = api_keys["visiting_students_weaviate_api_key"]
+        openai_api_key = api_keys["openai_api_key"]
         
-        with get_weaviate_client() as client:
+        with get_weaviate_client(visiting_students_weaviate_url, visiting_students_weaviate_api_key, openai_api_key) as client:
             visiting_student_collection = client.collections.get("VisitingStudent")
             
             # Find the student by email
@@ -475,12 +486,15 @@ async def update_student_match(student_email: str, tour_guide_id: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.delete("/visiting-students/{student_email}")
-async def delete_visiting_student(student_email: str):
+async def delete_visiting_student(student_email: str, api_keys=Depends(get_token_then_APIS)):
     """Delete a visiting student from the database."""
     try:
         logger.info(f"Attempting to delete visiting student with email: {student_email}")
+        visiting_students_weaviate_url = api_keys["visiting_students_weaviate_url"]
+        visiting_students_weaviate_api_key = api_keys["visiting_students_weaviate_api_key"]
+        openai_api_key = api_keys["openai_api_key"]
         
-        with get_weaviate_client() as client:
+        with get_weaviate_client(visiting_students_weaviate_url, visiting_students_weaviate_api_key, openai_api_key) as client:
             # Get the VisitingStudent collection
             visiting_student_collection = client.collections.get("VisitingStudent")
             logger.info("Successfully retrieved VisitingStudent collection")
@@ -518,12 +532,15 @@ async def delete_visiting_student(student_email: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/visiting-students/{student_email}/unmatch")
-async def unmatch_student(student_email: str):
+async def unmatch_student(student_email: str, api_keys=Depends(get_token_then_APIS)):
     """Unmatch a visiting student, moving them back to the unmatched list."""
     try:
         logger.info(f"Unmatching student with email: {student_email}")
+        visiting_students_weaviate_url = api_keys["visiting_students_weaviate_url"]
+        visiting_students_weaviate_api_key = api_keys["visiting_students_weaviate_api_key"]
+        openai_api_key = api_keys["openai_api_key"]
         
-        with get_weaviate_client() as client:
+        with get_weaviate_client(visiting_students_weaviate_url, visiting_students_weaviate_api_key, openai_api_key) as client:
             visiting_student_collection = client.collections.get("VisitingStudent")
             
             # Find the student by email
