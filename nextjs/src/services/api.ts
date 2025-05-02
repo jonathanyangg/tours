@@ -1,5 +1,6 @@
 // API service for communicating with the FastAPI backend
 
+import { getToken } from "@/utils/auth";
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
 
 /**
@@ -35,7 +36,14 @@ export async function uploadTourGuides(file: File) {
  */
 export async function getTourGuides() {
   try {
-    const response = await fetch(`${API_BASE_URL}/tour-guides`);
+    const token = await getToken();
+    const response = await fetch(`${API_BASE_URL}/tour-guides`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+    });
 
     if (!response.ok) {
       const errorData = await response.json();
