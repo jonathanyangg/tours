@@ -48,7 +48,7 @@ def get_token_then_APIS(credentials: HTTPAuthorizationCredentials = Depends(bear
         response_user = response.user
         user_id = response_user.id
         supabase_data_response = supabase.table('school_weaviate_credentials').select('tour_guides_weaviate_url', 'tour_guides_weaviate_api_key', 'visiting_students_weaviate_url', 'visiting_students_weaviate_api_key', 'openai_api_key').eq('user_id', user_id).execute()
-        return supabase_data_response.data
+        return supabase_data_response.data[0]
 
 
     except Exception as e:

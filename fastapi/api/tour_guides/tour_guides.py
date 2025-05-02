@@ -28,56 +28,18 @@ router = APIRouter()
 BATCH_SIZE = 100
 EMBEDDING_MODEL = "text-embedding-3-large"
 
-# Environment variables
-openai_key = os.environ.get("OPENAI_API_KEY")
-weaviate_url = os.environ["TOUR_GUIDE_WEAVIATE_URL"]
-weaviate_api_key = os.environ["TOUR_GUIDE_WEAVIATE_API_KEY"]
-
-# Configure OpenAI client
-client_openai = OpenAI(api_key=openai_key)
-
-headers = {
-    "X-OpenAI-Api-Key": openai_key,
-}
-
-def get_weaviate_credentials(api_keys):
-    """Extract Weaviate credentials from the API keys dictionary."""
-    if not api_keys or len(api_keys) == 0:
-        logger.error("No API keys provided")
-        raise HTTPException(
-            status_code=401, 
-            detail="No API keys available. Authentication required."
-        )
-    
-    try:
-        weaviate_url = api_keys[0]["tour_guides_weaviate_url"]
-        weaviate_api_key = api_keys[0]["tour_guides_weaviate_api_key"]
-        return weaviate_url, weaviate_api_key
-    except (KeyError, IndexError) as e:
-        logger.error(f"Missing required Weaviate credentials: {e}")
-        raise HTTPException(
-            status_code=500,
-            detail="Missing required Weaviate credentials"
-        )
 
 @contextmanager
-def get_weaviate_client(weaviate_url=None, weaviate_api_key=None):
-    """Context manager for Weaviate client connections."""
-    # Use environment variables as fallback if not provided
-    # This is kept for backward compatibility but should be avoided in protected endpoints
-    if weaviate_url is None:
-        weaviate_url = os.environ["TOUR_GUIDE_WEAVIATE_URL"]
-        logger.warning("Using environment variable for Weaviate URL - this should be avoided in production")
-    
-    if weaviate_api_key is None:
-        weaviate_api_key = os.environ["TOUR_GUIDE_WEAVIATE_API_KEY"]
-        logger.warning("Using environment variable for Weaviate API key - this should be avoided in production")
-    
+def get_weaviate_client(tour_guides_weaviate_url=None, tour_guides_weaviate_api_key=None, openai_api_key=None):
     client = None
+    headers = {
+    "X-OpenAI-Api-Key": openai_api_key,
+    }
+
     try:
         client = weaviate.connect_to_weaviate_cloud(
-            cluster_url=weaviate_url,
-            auth_credentials=Auth.api_key(weaviate_api_key),
+            cluster_url=tour_guides_weaviate_url,
+            auth_credentials=Auth.api_key(tour_guides_weaviate_api_key),
             headers=headers
         )
         logger.info("Successfully connected to Weaviate")
@@ -90,10 +52,10 @@ def get_weaviate_client(weaviate_url=None, weaviate_api_key=None):
             client.close()
             logger.info("Closed Weaviate connection")
 
-def create_schema(weaviate_url=None, weaviate_api_key=None):
+def create_schema(tour_guides_weaviate_url=None, tour_guides_weaviate_api_key=None, openai_api_key=None):
     """Create or update the Weaviate schema for tour guides."""
     try:
-        with get_weaviate_client(weaviate_url, weaviate_api_key) as client:
+        with get_weaviate_client(tour_guides_weaviate_url, tour_guides_weaviate_api_key, openai_api_key) as client:
             # List existing collections (schemas)
             existing_collections = client.collections.list_all()
             logger.info(f"Existing collections: {existing_collections}")
@@ -173,7 +135,7 @@ def format_dataframe_columns(df: pd.DataFrame, start_pos: int = 3) -> pd.DataFra
     )
     return df
 
-def process_and_store_tour_guides(df: pd.DataFrame, weaviate_url=None, weaviate_api_key=None) -> Dict:
+def process_and_store_tour_guides(df: pd.DataFrame, tour_guides_weaviate_url=None, tour_guides_weaviate_api_key=None, openai_api_key=None) -> Dict:
     """
     Process tour guide data and store it in Weaviate.
     
@@ -184,7 +146,7 @@ def process_and_store_tour_guides(df: pd.DataFrame, weaviate_url=None, weaviate_
     """
     try:
         # Create or verify the schema first
-        create_schema(weaviate_url, weaviate_api_key)
+        create_schema(tour_guides_weaviate_url, tour_guides_weaviate_api_key, openai_api_key)
 
         # Format the text representation
         df = format_dataframe_columns(df)
@@ -193,7 +155,7 @@ def process_and_store_tour_guides(df: pd.DataFrame, weaviate_url=None, weaviate_
         logger.info("Inserting tour guide data into Weaviate...")
         count = 0
         
-        with get_weaviate_client(weaviate_url, weaviate_api_key) as client:
+        with get_weaviate_client(tour_guides_weaviate_url, tour_guides_weaviate_api_key, openai_api_key) as client:
             # Get the TourGuide collection
             tour_guide_collection = client.collections.get("TourGuide")
             
@@ -248,8 +210,10 @@ async def upload_tour_guides(file: UploadFile = File(...), api_keys=Depends(get_
     All remaining columns will be combined into a text representation for embedding.
     """
     logger.info(f"Received file upload: {file.filename}")
-    weaviate_url, weaviate_api_key = get_weaviate_credentials(api_keys)
-    
+    tour_guides_weaviate_url = api_keys["tour_guides_weaviate_url"]
+    tour_guides_weaviate_api_key = api_keys["tour_guides_weaviate_api_key"]
+    openai_api_key = api_keys["openai_api_key"]
+
     if not file.filename.endswith('.csv'):
         logger.error(f"Invalid file type: {file.filename}")
         raise HTTPException(status_code=400, detail="File must be a CSV")
@@ -277,7 +241,7 @@ async def upload_tour_guides(file: UploadFile = File(...), api_keys=Depends(get_
         logger.info(f"Processing CSV with {len(df)} rows and {len(df.columns)} columns")
         
         # Process and store the tour guides
-        result = process_and_store_tour_guides(df, weaviate_url, weaviate_api_key)
+        result = process_and_store_tour_guides(df, tour_guides_weaviate_url, tour_guides_weaviate_api_key, openai_api_key)
         
         return JSONResponse(
             content=result,
@@ -298,10 +262,12 @@ async def upload_tour_guides(file: UploadFile = File(...), api_keys=Depends(get_
 async def get_tour_guides(api_keys=Depends(get_token_then_APIS)):
     """Retrieve tour guide information from Weaviate."""
     logger.info(f"API keys: {api_keys}")
-    weaviate_url, weaviate_api_key = get_weaviate_credentials(api_keys)
+    tour_guides_weaviate_url = api_keys["tour_guides_weaviate_url"]
+    tour_guides_weaviate_api_key = api_keys["tour_guides_weaviate_api_key"]
+    openai_api_key = api_keys["openai_api_key"]
 
     try:
-        with get_weaviate_client(weaviate_url, weaviate_api_key) as client:
+        with get_weaviate_client(tour_guides_weaviate_url, tour_guides_weaviate_api_key, openai_api_key) as client:
             # Check if the TourGuide collection exists
             if "TourGuide" not in client.collections.list_all():
                 return {
@@ -341,10 +307,11 @@ async def get_tour_guides(api_keys=Depends(get_token_then_APIS)):
 @router.get("/test-weaviate")
 async def test_weaviate_connection(api_keys=Depends(get_token_then_APIS)):
     """Test the connection to Weaviate using user-specific credentials."""
-    weaviate_url, weaviate_api_key = get_weaviate_credentials(api_keys)
-    
+    tour_guides_weaviate_url = api_keys["tour_guides_weaviate_url"]
+    tour_guides_weaviate_api_key = api_keys["tour_guides_weaviate_api_key"]
+    openai_api_key = api_keys["openai_api_key"]
     try:
-        with get_weaviate_client(weaviate_url, weaviate_api_key) as client:
+        with get_weaviate_client(tour_guides_weaviate_url, tour_guides_weaviate_api_key, openai_api_key) as client:
             # Try to list collections
             collections = client.collections.list_all()
             return {
