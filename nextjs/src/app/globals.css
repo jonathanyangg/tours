@@ -2,3 +2,16 @@
 @plugin "daisyui"{
   themes: corporate --default, dark --prefersdark;
 }
+
+/* Global focus styles */
+*:focus-visible {
+  outline: 1px solid #333;
+  outline-offset: 1px;
+  border-radius: 2px;
+  transition: outline-offset 0.2s ease;
+}
+
+/* Remove default focus styles for mouse users, but keep them for keyboard navigation */
+*:focus:not(:focus-visible) {
+  outline: none;
+}

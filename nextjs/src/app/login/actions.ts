@@ -2,10 +2,14 @@
 
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
-
 import { createClient } from '@/app/supabase/server'
 
-export async function login(prevState: { error: string | null }, formData: FormData) {
+interface LoginState {
+  error: string
+  isLoading: boolean
+}
+
+export async function login(prevState: LoginState, formData: FormData): Promise<LoginState> {
   const supabase = await createClient()
 
   // type-casting here for convenience
@@ -19,7 +23,8 @@ export async function login(prevState: { error: string | null }, formData: FormD
 
   if (error) {
     return {
-      error: 'Invalid email or password. Please try again.'
+      error: 'Invalid email or password. Please try again.',
+      isLoading: false
     }
   }
 

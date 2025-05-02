@@ -3,49 +3,65 @@
 import { useActionState } from 'react'
 import { login } from './actions'
 
+interface LoginState {
+  error: string
+  isLoading: boolean
+}
+
 export default function LoginPage() {
-  const initialState = { error: null as string | null }
+  const initialState: LoginState = { error: '', isLoading: false }
   const [state, formAction] = useActionState(login, initialState)
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-gray-100">
-      <div className="w-full max-w-md rounded-lg bg-white p-8 shadow-md">
-        <h1 className="mb-6 text-center text-2xl font-bold text-gray-800">Log In</h1>
-        <form className="space-y-4" action={formAction}>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
+      <div className="w-full max-w-md p-8 space-y-8 bg-white rounded-2xl shadow-lg">
+        <div className="space-y-2">
+          <h1 className="text-3xl font-semibold text-gray-900 text-center">Welcome back</h1>
+          <p className="text-center text-gray-600">Please enter your details to sign in</p>
+        </div>
+
+        <form className="mt-8 space-y-6" action={formAction}>
           {state?.error && (
-            <div className="rounded-md bg-red-50 p-3">
-              <p className="text-sm text-red-600">{state.error}</p>
+            <div className="p-4 rounded-lg bg-red-50 border border-red-100">
+              <p className="text-sm text-red-600 font-medium">{state.error}</p>
             </div>
           )}
-          <div className="space-y-2">
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-              Email:
-            </label>
-            <input
-              id="email"
-              name="email"
-              type="email"
-              required
-              className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-            />
+          
+          <div className="space-y-5">
+            <div className="space-y-2">
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                Email address
+              </label>
+              <input
+                id="email"
+                name="email"
+                type="email"
+                required
+                className="block w-full px-4 py-3 rounded-lg border border-gray-200 transition duration-150 ease-in-out"
+                placeholder="Enter your email"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                Password
+              </label>
+              <input
+                id="password"
+                name="password"
+                type="password"
+                required
+                className="block w-full px-4 py-3 rounded-lg border border-gray-200 transition duration-150 ease-in-out"
+                placeholder="••••••••"
+              />
+            </div>
           </div>
-          <div className="space-y-2">
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-              Password:
-            </label>
-            <input
-              id="password"
-              name="password"
-              type="password"
-              required
-              className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-            />
-          </div>
+
           <button
             type="submit"
-            className="mt-4 w-full rounded-md bg-blue-600 py-2 text-white transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            className="w-full py-3 px-4 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transform transition-all duration-150 ease-in-out hover:scale-[1.02] cursor-pointer active:bg-blue-800 active:scale-[0.99]"
           >
-            Log in
+            Sign in
           </button>
         </form>
       </div>
