@@ -46,6 +46,7 @@ export default function DatabaseMatches() {
   const [refreshing, setRefreshing] = useState(false);
   const [matchingStudent, setMatchingStudent] = useState<string | null>(null);
   const [isMatchingAll, setIsMatchingAll] = useState(false);
+  const [choosingMatch, setChoosingMatch] = useState<{studentId: string, guideId: string} | null>(null);
 
   useEffect(() => {
     fetchVisitingStudents();
@@ -191,6 +192,7 @@ export default function DatabaseMatches() {
   };
 
   const handleChooseMatch = async (studentEmail: string, tourGuideId: string) => {
+    setChoosingMatch({studentId: studentEmail, guideId: tourGuideId});
     try {
       console.log('Choosing match for student:', studentEmail, 'with tour guide:', tourGuideId);
       await updateStudentMatch(studentEmail, tourGuideId);
@@ -218,6 +220,8 @@ export default function DatabaseMatches() {
         ...prev,
         [studentEmail]: err instanceof Error ? err.message : 'Failed to choose match'
       }));
+    } finally {
+      setChoosingMatch(null);
     }
   };
 
@@ -545,8 +549,16 @@ export default function DatabaseMatches() {
                                         <button
                                           className="btn btn-primary"
                                           onClick={() => handleChooseMatch(student.email, match.student_id)}
+                                          disabled={choosingMatch?.studentId === student.email && choosingMatch?.guideId === match.student_id}
                                         >
-                                          Choose Match
+                                          {choosingMatch?.studentId === student.email && choosingMatch?.guideId === match.student_id ? (
+                                            <>
+                                              <span className="loading loading-spinner loading-xs mr-2"></span>
+                                              Matching...
+                                            </>
+                                          ) : (
+                                            'Choose Match'
+                                          )}
                                         </button>
                                       </div>
                                     </div>

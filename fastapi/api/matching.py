@@ -107,7 +107,7 @@ def match_tour_guides_manual(request: MatchingRequest):
         text_representation = ", ".join(text_fields)
         logger.info(f"Generated text representation: {text_representation}")
         
-        with get_weaviate_client() as client:
+        with get_weaviate_client(tour_guide_weaviate_url, tour_guide_weaviate_api_key) as client:
             # Get the TourGuide collection
             tour_guide_collection = client.collections.get("TourGuide")
             
@@ -207,7 +207,7 @@ async def match_tour_guides_from_database(request: MatchingRequest):
             logger.info(f"Generated text representation: {text_representation}")
             
             # Get tour guides client for matching
-            with get_weaviate_client() as tour_guides_client:
+            with get_weaviate_client(tour_guide_weaviate_url, tour_guide_weaviate_api_key) as tour_guides_client:
                 # Get the TourGuide collection
                 tour_guide_collection = tour_guides_client.collections.get("TourGuide")
                 
