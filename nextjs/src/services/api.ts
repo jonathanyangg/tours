@@ -381,4 +381,32 @@ export async function deleteVisitingStudent(email: string) {
     console.error('Error deleting visiting student:', error);
     throw error;
   }
+}
+
+/**
+ * Get the current user's email
+ * @returns The user's email
+ */
+export async function getUserEmail() {
+  try {
+    const token = await getToken();
+    const response = await fetch(`${API_BASE_URL}/test-auth`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || 'Failed to fetch user email');
+    }
+
+    const data = await response.json();
+    return data.email;
+  } catch (error) {
+    console.error('Error fetching user email:', error);
+    throw error;
+  }
 } 

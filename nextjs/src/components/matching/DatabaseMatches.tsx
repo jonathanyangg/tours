@@ -10,6 +10,7 @@ import {
 import { toast } from 'react-hot-toast';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
+import { useAuth } from '@/app/supabase/AuthContext';
 
 type VisitingStudent = {
   name: string;
@@ -52,10 +53,15 @@ export default function DatabaseMatches() {
   const [matchingStudent, setMatchingStudent] = useState<string | null>(null);
   const [isMatchingAll, setIsMatchingAll] = useState(false);
   const [choosingMatch, setChoosingMatch] = useState<{studentId: string, guideId: string} | null>(null);
+  const { user } = useAuth();
 
   useEffect(() => {
-    fetchVisitingStudents();
-  }, []);
+    if (user) {
+      fetchVisitingStudents();
+    } else {
+      setVisitingStudents([]);
+    }
+  }, [user]);
 
   // Helper function to check if a date string is within the selected range
   const isInDateRange = (dateString: string): boolean => {

@@ -1,12 +1,14 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { createClient } from '@/app/supabase/client';
 import { getUserCredentials } from '@/services/api';
+import { useAuth } from '@/app/supabase/AuthContext';
 
 export default function CredentialsViewer() {
   const [credentials, setCredentials] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showCredentials, setShowCredentials] = useState(false);
+  const { user } = useAuth();
 
   const fetchCredentials = async () => {
     setLoading(true);
@@ -39,6 +41,16 @@ export default function CredentialsViewer() {
     }
   };
 
+  // Automatically fetch credentials when user changes
+  useEffect(() => {
+    if (user) {
+      fetchCredentials();
+    } else {
+      setCredentials(null);
+      setShowCredentials(false);
+    }
+  }, [user]);
+
   const toggleCredentialsVisibility = () => {
     setShowCredentials(!showCredentials);
   };
@@ -52,7 +64,7 @@ export default function CredentialsViewer() {
         disabled={loading}
         className="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition duration-300 mb-4"
       >
-        {loading ? 'Loading...' : 'Fetch API Credentials'}
+        {loading ? 'Loading...' : 'Refresh API Credentials'}
       </button>
       
       {error && (
