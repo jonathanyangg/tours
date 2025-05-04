@@ -445,7 +445,7 @@ export default function DatabaseMatches() {
                   <input 
                     type="text" 
                     placeholder="Search by name or email..." 
-                    className="input input-bordered flex-1 bg-base-100 border-base-300 text-base-content placeholder:text-base-content/50"
+                    className="input input-bordered flex-1 bg-base-100 border-base-300 text-base-content placeholder:text-base-content/40 placeholder:text-sm"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                   />
@@ -459,7 +459,7 @@ export default function DatabaseMatches() {
                       selectsStart
                       startDate={startDate}
                       endDate={endDate}
-                      className="input input-bordered w-full bg-base-100 border-base-300 text-base-content text-sm"
+                      className="input input-bordered w-full bg-base-100 border-base-300 text-base-content text-sm placeholder:text-sm placeholder:text-base-content/40"
                       placeholderText="Start date"
                       dateFormat="MM/dd/yyyy"
                     />
@@ -474,7 +474,7 @@ export default function DatabaseMatches() {
                       startDate={startDate}
                       endDate={endDate}
                       minDate={startDate || undefined}
-                      className="input input-bordered w-full bg-base-100 border-base-300 text-base-content text-sm"
+                      className="input input-bordered w-full bg-base-100 border-base-300 text-base-content text-sm placeholder:text-sm placeholder:text-base-content/40"
                       placeholderText="End date" 
                       dateFormat="MM/dd/yyyy"
                     />
