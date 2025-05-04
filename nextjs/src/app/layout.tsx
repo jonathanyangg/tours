@@ -3,7 +3,11 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from './supabase/AuthContext';
 
-const inter = Inter({ subsets: ["latin"] });
+const inter = Inter({
+  subsets: ["latin"],
+  display: 'swap',
+  variable: '--font-inter',
+});
 
 export const metadata: Metadata = {
   title: "Tour Guide Matcher",
@@ -20,8 +24,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="h-full" data-theme="corporate">
-      <body className={`${inter.className} h-full`} suppressHydrationWarning>
+    <html lang="en" className={`h-full ${inter.variable}`} data-theme="corporate">
+      <body className="h-full font-sans antialiased text-base" suppressHydrationWarning>
         <AuthProvider>
           {children}
         </AuthProvider>

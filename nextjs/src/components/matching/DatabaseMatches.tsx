@@ -469,24 +469,24 @@ export default function DatabaseMatches() {
             <div className="overflow-x-auto">
               <table className="table w-full">
                 <thead>
-                  <tr className="bg-white">
-                    <th className="text-base-content/70 font-normal">Name</th>
-                    <th className="text-base-content/70 font-normal">Email</th>
-                    <th className="text-base-content/70 font-normal">Tour Date</th>
-                    <th className="text-base-content/70 font-normal">Action</th>
+                  <tr>
+                    <th className="font-medium">Name</th>
+                    <th className="font-medium">Email</th>
+                    <th className="font-medium">Tour Date</th>
+                    <th className="font-medium">Action</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredStudents.map((student, index) => (
                     <React.Fragment key={index}>
-                      <tr className="hover:bg-base-200 transition-all duration-200 hover:scale-[1.01] hover:shadow-sm">
-                        <td className="text-base-content">{student.name}</td>
-                        <td className="text-base-content/70">{student.email}</td>
-                        <td className="text-base-content/70">{new Date(student.tour_datetime).toLocaleString()}</td>
+                      <tr className="hover">
+                        <td>{student.name}</td>
+                        <td>{student.email}</td>
+                        <td>{new Date(student.tour_datetime).toLocaleString()}</td>
                         <td>
-                          <div className="flex justify-between">
+                          <div className="flex justify-between gap-2">
                             <button 
-                              className="btn btn-success"
+                              className="btn btn-success btn-sm"
                               onClick={() => handleMatch(student)}
                               disabled={matchingStudent === student.email}
                             >
@@ -500,7 +500,7 @@ export default function DatabaseMatches() {
                               )}
                             </button>
                             <button
-                              className="btn bg-red-500 hover:bg-red-600 text-white"
+                              className="btn btn-error btn-sm"
                               onClick={() => handleDeleteStudent(student.email)}
                               disabled={isDeleting === student.email}
                             >

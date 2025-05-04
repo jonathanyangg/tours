@@ -12,7 +12,6 @@
     "@auth/core": "^0.38.0",
     "@supabase/ssr": "^0.6.1",
     "@supabase/supabase-js": "^2.49.4",
-    "@tailwindcss/postcss": "^4.0.15",
     "@types/jsonwebtoken": "^9.0.9",
     "@types/react-datepicker": "^6.2.0",
     "class-variance-authority": "^0.7.1",
@@ -21,7 +20,6 @@
     "lucide-react": "^0.487.0",
     "next": "15.2.4",
     "next-auth": "^5.0.0-beta.25",
-    "postcss": "^8.5.3",
     "react": "^19.0.0",
     "react-datepicker": "^8.3.0",
     "react-dom": "^19.0.0",
@@ -34,10 +32,12 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "daisyui": "^5.0.18",
+    "autoprefixer": "^10.4.21",
+    "daisyui": "^3.9.4",
     "eslint": "^9",
     "eslint-config-next": "15.2.4",
-    "tailwindcss": "^4.0.15",
+    "postcss": "^8.5.3",
+    "tailwindcss": "^3.4.17",
     "typescript": "^5"
   }
 }

@@ -69,40 +69,40 @@ export default function TourGuides() {
           <div className="overflow-x-auto">
             <table className="table w-full">
               <thead>
-                <tr className="bg-neutral-50 border-b border-neutral-200">
-                  <th className="text-neutral-900 font-medium text-xs uppercase tracking-wider px-6 py-4">
+                <tr>
+                  <th className="text-neutral-900 font-medium text-xs uppercase tracking-wider">
                     Student ID
                   </th>
-                  <th className="text-neutral-900 font-medium text-xs uppercase tracking-wider px-6 py-4">
+                  <th className="text-neutral-900 font-medium text-xs uppercase tracking-wider">
                     Residential Status
                   </th>
-                  <th className="text-neutral-900 font-medium text-xs uppercase tracking-wider px-6 py-4">
+                  <th className="text-neutral-900 font-medium text-xs uppercase tracking-wider">
                     Gender
                   </th>
-                  <th className="text-neutral-900 font-medium text-xs uppercase tracking-wider px-6 py-4">
+                  <th className="text-neutral-900 font-medium text-xs uppercase tracking-wider">
                     Grade
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-neutral-100">
+              <tbody>
                 {students.map((student, index) => (
                   <tr 
                     key={index} 
-                    className="hover-lift hover:bg-blue-50/30 transition-standard"
+                    className="hover"
                   >
-                    <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-neutral-900">
+                    <td className="font-medium text-neutral-900">
                       {student.student_id}
                     </td>
-                    <td className="whitespace-nowrap px-6 py-4 text-sm text-neutral-600">
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                    <td className="text-neutral-600">
+                      <span className="badge badge-success text-xs">
                         {student.residential_status}
                       </span>
                     </td>
-                    <td className="whitespace-nowrap px-6 py-4 text-sm text-neutral-600">
+                    <td className="text-neutral-600">
                       {student.gender}
                     </td>
-                    <td className="whitespace-nowrap px-6 py-4 text-sm text-neutral-600">
-                      <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-blue-100 text-blue-800">
+                    <td className="text-neutral-600">
+                      <span className="badge badge-info text-xs">
                         Grade {student.grade}
                       </span>
                     </td>

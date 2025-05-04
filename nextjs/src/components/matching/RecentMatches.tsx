@@ -127,26 +127,26 @@ export default function RecentMatches() {
           <div className="overflow-x-auto">
             <table className="table w-full">
               <thead>
-                <tr className="bg-white">
-                  <th className="text-base-content/70 font-normal">Student</th>
-                  <th className="text-base-content/70 font-normal">Tour Guide</th>
-                  <th className="text-base-content/70 font-normal">Match Date</th>
-                  <th className="text-base-content/70 font-normal">Status</th>
-                  <th className="text-base-content/70 font-normal">Actions</th>
+                <tr>
+                  <th className="font-medium">Student</th>
+                  <th className="font-medium">Tour Guide</th>
+                  <th className="font-medium">Match Date</th>
+                  <th className="font-medium">Status</th>
+                  <th className="font-medium">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {matchedStudents.map((student, index) => (
-                  <tr key={index} className="hover:bg-base-200 transition-all duration-200 hover:scale-[1.01] hover:shadow-sm">
-                    <td className="text-base-content">{student.name}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <tr key={index} className="hover">
+                    <td>{student.name}</td>
+                    <td>
                       {student.matched_tour_guide_name || student.matched_tour_guide}
                     </td>
-                    <td className="text-base-content/70">{new Date(student.tour_datetime).toLocaleString()}</td>
-                    <td><button className="btn btn-success">Confirmed</button></td>
+                    <td>{new Date(student.tour_datetime).toLocaleString()}</td>
+                    <td><span className="badge badge-success">Confirmed</span></td>
                     <td>
                       <button
-                        className="btn bg-red-500 hover:bg-red-600 text-white"
+                        className="btn btn-error btn-sm"
                         onClick={() => handleUnmatchStudent(student.email)}
                         disabled={unmatchingStudent === student.email}
                       >
