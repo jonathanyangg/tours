@@ -24,7 +24,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`h-full ${inter.variable}`} data-theme="corporate">
+    <html lang="en" className={`h-full ${inter.variable}`} data-theme="silk">
       <body className="h-full font-sans antialiased text-base" suppressHydrationWarning>
         <AuthProvider>
           {children}
