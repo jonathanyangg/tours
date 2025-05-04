@@ -32,4 +32,3 @@ def get_supabase_client():
 
 # Create a global client for backward compatibility
 # This will be deprecated in favor of the context manager
-supabase = create_client(URL, KEY)

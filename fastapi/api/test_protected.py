@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 import os
 import logging
 from .supabase_client import get_supabase_client
+from .auth import get_token_then_APIS
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -26,33 +27,23 @@ async def test_protected_route(response_data=Depends(get_current_user)):
     }
 
 @router.get("/user-credentials")
-async def get_weaviate_credentials(response_data=Depends(get_current_user)):
-    table_name = "school_weaviate_credentials"
-    columns = [
-        "tour_guides_weaviate_url", 
-        "tour_guides_weaviate_api_key", 
-        "visiting_students_weaviate_url", 
-        "visiting_students_weaviate_api_key", 
-        "openai_api_key"
-    ]
-
-    user_id = response_data.id
+async def get_weaviate_credentials(api_keys=Depends(get_token_then_APIS)):
     try:
-        with get_supabase_client() as supabase:
-            # Create the select query with the specified columns
-            supabase_data_response = supabase.table(table_name).select(','.join(columns)).eq('user_id', user_id).execute()
+        tour_guides_weaviate_url = api_keys["tour_guides_weaviate_url"]
+        tour_guides_weaviate_api_key = api_keys["tour_guides_weaviate_api_key"]
+        visiting_students_weaviate_url = api_keys["visiting_students_weaviate_url"]
+        visiting_students_weaviate_api_key = api_keys["visiting_students_weaviate_api_key"]
+        openai_api_key = api_keys["openai_api_key"]
 
-            if supabase_data_response.data:
-                return {
-                    "status": "success",
-                    "data": supabase_data_response.data
-                } 
-            else:
-                logger.error(f"No data found for user {user_id}")
-                raise HTTPException(
-                    status_code=404,
-                    detail="Credentials not found for this user"
-                )
+
+        return {
+            "tour_guides_weaviate_url": tour_guides_weaviate_url,
+            "tour_guides_weaviate_api_key": tour_guides_weaviate_api_key,
+            "visiting_students_weaviate_url": visiting_students_weaviate_url,
+            "visiting_students_weaviate_api_key": visiting_students_weaviate_api_key,
+            "openai_api_key": openai_api_key
+        }
+    
     except Exception as e:
         logger.error(f"Error fetching credentials: {e}")
         raise HTTPException(

@@ -31,7 +31,7 @@ export default function CredentialsViewer() {
       // Use the token to fetch credentials from the API
       const response = await getUserCredentials(token);
       
-      setCredentials(response.data);
+      setCredentials(response);
       setShowCredentials(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch credentials');
