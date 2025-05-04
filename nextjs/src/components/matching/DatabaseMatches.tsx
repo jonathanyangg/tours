@@ -12,6 +12,46 @@ import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { useAuth } from '@/app/supabase/AuthContext';
 
+// Add custom styles for the date picker
+const datePickerStyles = `
+  .react-datepicker {
+    font-family: inherit;
+    border-radius: 0.5rem;
+    border: 1px solid hsl(var(--b3));
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  }
+  .react-datepicker__header {
+    background-color: hsl(var(--b1));
+    border-bottom: 1px solid hsl(var(--b3));
+  }
+  .react-datepicker__current-month,
+  .react-datepicker-time__header,
+  .react-datepicker-year-header {
+    color: hsl(var(--bc));
+    font-weight: 500;
+  }
+  .react-datepicker__day-name,
+  .react-datepicker__day,
+  .react-datepicker__time-name {
+    color: hsl(var(--bc));
+  }
+  .react-datepicker__day:hover {
+    background-color: hsl(var(--b2));
+  }
+  .react-datepicker__day--selected,
+  .react-datepicker__day--in-selecting-range,
+  .react-datepicker__day--in-range {
+    background-color: hsl(var(--p));
+    color: white;
+  }
+  .react-datepicker__day--keyboard-selected {
+    background-color: hsl(var(--p) / 50%);
+  }
+  .react-datepicker__input-container input {
+    font-size: 1rem;
+  }
+`;
+
 type VisitingStudent = {
   name: string;
   email: string;
@@ -411,42 +451,43 @@ export default function DatabaseMatches() {
                   />
                 </div>
               ) : (
-                <div className="flex items-center gap-2">
-                  <div className="flex items-center gap-1 flex-1">
+                <div className="flex items-center">
+                  <div className="w-52 mr-2">
                     <DatePicker
                       selected={startDate}
                       onChange={(date: Date | null) => setStartDate(date)}
                       selectsStart
                       startDate={startDate}
                       endDate={endDate}
-                      className="input input-bordered bg-base-100 border-base-300 text-base-content flex-1"
+                      className="input input-bordered w-full bg-base-100 border-base-300 text-base-content text-sm"
                       placeholderText="Start date"
-                      dateFormat="MM/dd/yy"
+                      dateFormat="MM/dd/yyyy"
                     />
-                    <span className="text-base-content/50 px-1">to</span>
-                    <div className="flex items-center gap-2">
-                      <DatePicker
-                        selected={endDate}
-                        onChange={(date: Date | null) => setEndDate(date)}
-                        selectsEnd
-                        startDate={startDate}
-                        endDate={endDate}
-                        minDate={startDate || undefined}
-                        className="input input-bordered bg-base-100 border-base-300 text-base-content flex-1"
-                        placeholderText="End date"
-                        dateFormat="MM/dd/yy"
-                      />
-                      <button 
-                        className="btn bg-base-100 text-info-content border-info/70 hover:bg-info/70"
-                        onClick={() => {
-                          setStartDate(null);
-                          setEndDate(null);
-                        }}
-                      >
-                        Clear
-                      </button>
-                    </div>
+                    <style jsx global>{datePickerStyles}</style>
                   </div>
+                  <span className="text-base-content/60 mr-2">to</span>
+                  <div className="w-52 mr-3">
+                    <DatePicker
+                      selected={endDate}
+                      onChange={(date: Date | null) => setEndDate(date)}
+                      selectsEnd
+                      startDate={startDate}
+                      endDate={endDate}
+                      minDate={startDate || undefined}
+                      className="input input-bordered w-full bg-base-100 border-base-300 text-base-content text-sm"
+                      placeholderText="End date" 
+                      dateFormat="MM/dd/yyyy"
+                    />
+                  </div>
+                  <button 
+                    className="btn btn-sm bg-base-100 text-info-content border-info/70 hover:bg-info/70"
+                    onClick={() => {
+                      setStartDate(null);
+                      setEndDate(null);
+                    }}
+                  >
+                    Clear
+                  </button>
                 </div>
               )}
             </div>
@@ -500,7 +541,7 @@ export default function DatabaseMatches() {
                               )}
                             </button>
                             <button
-                              className="btn btn-error/70 text-error-content border-error/70 hover:bg-error/80"
+                              className="btn bg-base-100 text-error-content border-error/70 hover:bg-error/70"
                               onClick={() => handleDeleteStudent(student.email)}
                               disabled={isDeleting === student.email}
                             >
@@ -511,56 +552,64 @@ export default function DatabaseMatches() {
                       </tr>
                       {expandedStudents.has(student.email) && (
                         <tr>
-                          <td colSpan={4} className="p-4 bg-base-100">
-                            {matchStatuses[student.email] === 'error' ? (
-                              <div className="p-4 bg-error/20 text-error-content rounded-md">
-                                <p>{matchMessages[student.email]}</p>
-                              </div>
-                            ) : matchStatuses[student.email] === 'warning' ? (
-                              <div className="p-4 bg-warning/20 text-warning-content rounded-md">
-                                <p>{matchMessages[student.email]}</p>
-                              </div>
-                            ) : (
-                              <div className="space-y-4">
-                                {studentMatches[student.email]?.map((match, matchIndex) => (
-                                  <div key={match.id} className="p-4 bg-base-100 rounded-lg border border-base-300">
-                                    <div className="flex justify-between items-start">
-                                      <div>
-                                        <h4 className="font-medium text-base-content">Tour Guide {matchIndex + 1}</h4>
-                                        <p className="text-base-content/70">ID: {match.student_id}</p>
-                                        <p className="text-base-content/70">Grade: {match.grade}</p>
-                                        <p className="text-base-content/70">Gender: {match.gender}</p>
-                                        <p className="text-base-content/70">Residential Status: {match.residential_status}</p>
+                          <td colSpan={4} className="px-4 py-3">
+                            <div className="bg-white rounded-lg border border-base-300 shadow overflow-hidden">
+                              {matchStatuses[student.email] === 'error' ? (
+                                <div className="p-3 bg-error/20 text-error-content">
+                                  <p>{matchMessages[student.email]}</p>
+                                </div>
+                              ) : matchStatuses[student.email] === 'warning' ? (
+                                <div className="p-3 bg-warning/20 text-warning-content">
+                                  <p>{matchMessages[student.email]}</p>
+                                </div>
+                              ) : (
+                                <div className="p-3">
+                                  <div className="grid gap-2">
+                                    {studentMatches[student.email]?.map((match, matchIndex) => (
+                                      <div key={match.id} className="p-3 bg-base-100 rounded-md border border-base-300 shadow-sm">
+                                        <div className="flex justify-between items-center">
+                                          <div className="grid gap-0.5">
+                                            <h4 className="font-medium text-base-content">Tour Guide {matchIndex + 1}</h4>
+                                            <p className="text-sm text-base-content/70">ID: {match.student_id}</p>
+                                            <div className="flex gap-3 text-sm text-base-content/70">
+                                              <span>Grade: {match.grade}</span>
+                                              <span>•</span>
+                                              <span>Gender: {match.gender}</span>
+                                              <span>•</span>
+                                              <span>Status: {match.residential_status}</span>
+                                            </div>
+                                          </div>
+                                          <div className="text-right flex flex-col gap-2">
+                                            <p className="text-base-content font-medium text-sm">{formatSimilarity(1 - (match.distance || 0))} match</p>
+                                            <button
+                                              className="btn btn-xs bg-base-100 text-success-content border-success/70 hover:bg-success/70"
+                                              onClick={() => handleChooseMatch(student.email, match.student_id)}
+                                              disabled={choosingMatch?.studentId === student.email && choosingMatch?.guideId === match.student_id}
+                                            >
+                                              {choosingMatch?.studentId === student.email && choosingMatch?.guideId === match.student_id ? (
+                                                <>
+                                                  <span className="loading loading-spinner loading-xs mr-1"></span>
+                                                  Matching...
+                                                </>
+                                              ) : (
+                                                'Choose Match'
+                                              )}
+                                            </button>
+                                          </div>
+                                        </div>
                                       </div>
-                                      <div className="text-right space-y-2">
-                                        <p className="text-success font-medium">Match Score: {formatSimilarity(1 - (match.distance || 0))}</p>
-                                        <button
-                                          className="btn bg-base-100 text-success-content border-success/70 hover:bg-success/70"
-                                          onClick={() => handleChooseMatch(student.email, match.student_id)}
-                                          disabled={choosingMatch?.studentId === student.email && choosingMatch?.guideId === match.student_id}
-                                        >
-                                          {choosingMatch?.studentId === student.email && choosingMatch?.guideId === match.student_id ? (
-                                            <>
-                                              <span className="loading loading-spinner loading-xs mr-2"></span>
-                                              Matching...
-                                            </>
-                                          ) : (
-                                            'Choose Match'
-                                          )}
-                                        </button>
-                                      </div>
-                                    </div>
+                                    ))}
                                   </div>
-                                ))}
+                                </div>
+                              )}
+                              <div className="bg-white px-3 py-2 flex justify-end border-t border-base-300">
+                                <button 
+                                  className="btn btn-xs btn-ghost"
+                                  onClick={() => toggleExpanded(student.email)}
+                                >
+                                  {expandedStudents.has(student.email) ? 'Hide Matches' : 'Show Matches'}
+                                </button>
                               </div>
-                            )}
-                            <div className="mt-2 flex justify-end">
-                              <button 
-                                className="btn btn-ghost"
-                                onClick={() => toggleExpanded(student.email)}
-                              >
-                                {expandedStudents.has(student.email) ? 'Hide Matches' : 'Show Matches'}
-                              </button>
                             </div>
                           </td>
                         </tr>
