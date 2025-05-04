@@ -127,7 +127,7 @@ export default function IndividualMatch() {
                 value={formData.student_id}
                 onChange={handleChange}
                 placeholder="Enter student ID" 
-                className="input input-bordered bg-base-100 border-base-300 text-base-content placeholder:text-base-content/50 w-full" 
+                className="input input-bordered bg-base-100 border-base-300 text-base-content placeholder:text-base-content/50 w-full text-sm" 
               />
             </div>
 
@@ -136,7 +136,7 @@ export default function IndividualMatch() {
                 <span className="label-text text-base-content/80 font-normal">Time Period</span>
               </label>
               <select 
-                className="select select-bordered bg-base-100 border-base-300 text-base-content w-full"
+                className="select select-bordered bg-base-100 border-base-300 text-base-content w-full text-sm"
                 name="time_period"
                 value={formData.time_period}
                 onChange={handleChange}
@@ -157,7 +157,7 @@ export default function IndividualMatch() {
                 <span className="label-text text-base-content/80 font-normal">Gender</span>
               </label>
               <select 
-                className="select select-bordered bg-base-100 border-base-300 text-base-content w-full"
+                className="select select-bordered bg-base-100 border-base-300 text-base-content w-full text-sm"
                 name="gender"
                 value={formData.gender}
                 onChange={handleChange}
@@ -173,7 +173,7 @@ export default function IndividualMatch() {
                 <span className="label-text text-base-content/80 font-normal">Application Grade</span>
               </label>
               <select 
-                className="select select-bordered bg-base-100 border-base-300 text-base-content w-full"
+                className="select select-bordered bg-base-100 border-base-300 text-base-content w-full text-sm"
                 name="grade"
                 value={formData.grade}
                 onChange={handleChange}
@@ -191,7 +191,7 @@ export default function IndividualMatch() {
                 <span className="label-text text-base-content/80 font-normal">Residential Status</span>
               </label>
               <select 
-                className="select select-bordered bg-base-100 border-base-300 text-base-content w-full"
+                className="select select-bordered bg-base-100 border-base-300 text-base-content w-full text-sm"
                 name="residential_status"
                 value={formData.residential_status}
                 onChange={handleChange}
@@ -208,8 +208,8 @@ export default function IndividualMatch() {
               </label>
               <input 
                 type="text" 
-                placeholder="Enter city and country..." 
-                className="input input-bordered bg-base-100 border-base-300 text-base-content w-full"
+                placeholder="Enter city/country" 
+                className="input input-bordered bg-base-100 border-base-300 text-base-content placeholder:text-base-content/50 w-full text-sm"
                 name="city_country"
                 value={formData.city_country}
                 onChange={handleChange}
@@ -222,8 +222,8 @@ export default function IndividualMatch() {
               </label>
               <input 
                 type="text" 
-                placeholder="Enter sports interests..." 
-                className="input input-bordered bg-base-100 border-base-300 text-base-content w-full"
+                placeholder="Enter sports" 
+                className="input input-bordered bg-base-100 border-base-300 text-base-content placeholder:text-base-content/50 w-full text-sm"
                 name="sports"
                 value={formData.sports}
                 onChange={handleChange}
@@ -236,8 +236,8 @@ export default function IndividualMatch() {
               </label>
               <input 
                 type="text" 
-                placeholder="Enter extracurricular activities..." 
-                className="input input-bordered bg-base-100 border-base-300 text-base-content w-full max-w-full truncate"
+                placeholder="Enter extracurricular activities" 
+                className="input input-bordered bg-base-100 border-base-300 text-base-content placeholder:text-base-content/50 w-full max-w-full truncate text-sm"
                 maxLength={50}
                 name="extracurricular_activities"
                 value={formData.extracurricular_activities}
@@ -251,8 +251,8 @@ export default function IndividualMatch() {
               </label>
               <input 
                 type="text" 
-                placeholder="Enter academic interests..." 
-                className="input input-bordered bg-base-100 border-base-300 text-base-content w-full"
+                placeholder="Enter academic interests" 
+                className="input input-bordered bg-base-100 border-base-300 text-base-content placeholder:text-base-content/50 w-full text-sm"
                 name="academic_interests"
                 value={formData.academic_interests}
                 onChange={handleChange}
@@ -265,8 +265,8 @@ export default function IndividualMatch() {
               </label>
               <input 
                 type="text" 
-                placeholder="Enter any additional information..." 
-                className="input input-bordered bg-base-100 border-base-300 text-base-content w-full"
+                placeholder="Enter additional information" 
+                className="input input-bordered bg-base-100 border-base-300 text-base-content placeholder:text-base-content/50 w-full text-sm"
                 name="additional_information"
                 value={formData.additional_information}
                 onChange={handleChange}
@@ -279,8 +279,8 @@ export default function IndividualMatch() {
               </label>
               <input 
                 type="text" 
-                placeholder="Enter race..." 
-                className="input input-bordered bg-base-100 border-base-300 text-base-content w-full"
+                placeholder="Enter race" 
+                className="input input-bordered bg-base-100 border-base-300 text-base-content placeholder:text-base-content/50 w-full text-sm"
                 name="race"
                 value={formData.race}
                 onChange={handleChange}
@@ -291,7 +291,7 @@ export default function IndividualMatch() {
           <div className="flex justify-end mt-8">
             <button 
               type="submit" 
-              className={`btn ${isLoading ? 'loading' : ''} btn-primary transition-all duration-200 hover:scale-103`}
+              className={`btn ${isLoading ? 'loading' : ''} bg-base-100 text-info-content border-info/70 hover:bg-info/70 transition-all duration-200 hover:scale-103`}
               disabled={isLoading}
             >
               {isLoading ? '' : 'Match'}

@@ -288,7 +288,7 @@ export default function VisitingForm() {
             <div className="flex justify-end">
               <button
                 type="submit"
-                className={`btn btn-primary ${isSubmitting ? 'loading' : ''}`}
+                className={`btn btn-primary/90 ${isSubmitting ? 'loading' : ''}`}
                 disabled={isSubmitting}
               >
                 {isSubmitting ? 'Submitting...' : 'Submit Registration'}

@@ -29,7 +29,7 @@ export default function WeaviateTest() {
       <button
         onClick={handleTest}
         disabled={loading}
-        className={`btn ${loading ? 'btn-disabled' : 'btn-primary'}`}
+        className={`btn ${loading ? 'btn-disabled' : 'btn-primary/90'}`}
       >
         {loading ? 'Testing...' : 'Test Connection'}
       </button>

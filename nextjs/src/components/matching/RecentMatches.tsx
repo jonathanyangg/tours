@@ -92,7 +92,7 @@ export default function RecentMatches() {
         <div className="flex justify-between items-center mb-2">
           <h2 className="text-xl font-normal text-base-content">Recent Matches</h2>
           <button 
-            className="btn btn-primary"
+            className="btn bg-base-100 text-info-content border-info/70 hover:bg-info/70"
             onClick={handleRefresh}
             disabled={refreshing}
           >
@@ -103,7 +103,7 @@ export default function RecentMatches() {
               </>
             ) : (
               <>
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1 text-info-content" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                 </svg>
                 Refresh
@@ -143,10 +143,10 @@ export default function RecentMatches() {
                       {student.matched_tour_guide_name || student.matched_tour_guide}
                     </td>
                     <td>{new Date(student.tour_datetime).toLocaleString()}</td>
-                    <td><span className="badge badge-success">Confirmed</span></td>
+                    <td>Confirmed</td>
                     <td>
                       <button
-                        className="btn btn-error btn-sm"
+                        className="btn bg-base-100 text-error-content border-error/70 hover:bg-error/70"
                         onClick={() => handleUnmatchStudent(student.email)}
                         disabled={unmatchingStudent === student.email}
                       >

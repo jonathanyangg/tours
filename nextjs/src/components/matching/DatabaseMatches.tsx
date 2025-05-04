@@ -350,7 +350,7 @@ export default function DatabaseMatches() {
         <div className="flex justify-between items-center mb-2">
           <h2 className="text-xl font-normal text-base-content">Find Matches from Database</h2>
           <button 
-            className="btn btn-primary"
+            className="btn bg-base-100 text-info-content border-info/70 hover:bg-info/70"
             onClick={handleRefresh}
             disabled={refreshing}
           >
@@ -361,7 +361,7 @@ export default function DatabaseMatches() {
               </>
             ) : (
               <>
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1 text-info-content" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                 </svg>
                 Refresh
@@ -437,7 +437,7 @@ export default function DatabaseMatches() {
                         dateFormat="MM/dd/yy"
                       />
                       <button 
-                        className="btn btn-primary"
+                        className="btn bg-base-100 text-info-content border-info/70 hover:bg-info/70"
                         onClick={() => {
                           setStartDate(null);
                           setEndDate(null);
@@ -486,7 +486,7 @@ export default function DatabaseMatches() {
                         <td>
                           <div className="flex justify-between gap-2">
                             <button 
-                              className="btn btn-success btn-sm"
+                              className="btn bg-base-100 text-success-content border-success/70 hover:bg-success/70"
                               onClick={() => handleMatch(student)}
                               disabled={matchingStudent === student.email}
                             >
@@ -500,7 +500,7 @@ export default function DatabaseMatches() {
                               )}
                             </button>
                             <button
-                              className="btn btn-error btn-sm"
+                              className="btn btn-error/70 text-error-content border-error/70 hover:bg-error/80"
                               onClick={() => handleDeleteStudent(student.email)}
                               disabled={isDeleting === student.email}
                             >
@@ -535,7 +535,7 @@ export default function DatabaseMatches() {
                                       <div className="text-right space-y-2">
                                         <p className="text-success font-medium">Match Score: {formatSimilarity(1 - (match.distance || 0))}</p>
                                         <button
-                                          className="btn btn-primary"
+                                          className="btn bg-base-100 text-success-content border-success/70 hover:bg-success/70"
                                           onClick={() => handleChooseMatch(student.email, match.student_id)}
                                           disabled={choosingMatch?.studentId === student.email && choosingMatch?.guideId === match.student_id}
                                         >
@@ -574,7 +574,7 @@ export default function DatabaseMatches() {
           
           <div className="flex justify-end">
             <button 
-              className="btn btn-primary"
+              className="btn bg-base-100 text-info-content border-info/70 hover:bg-info/70"
               onClick={handleMatchAll}
               disabled={isMatchingAll}
             >

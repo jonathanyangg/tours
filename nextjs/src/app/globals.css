@@ -1,3 +1,11 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Override any button text-transform to ensure buttons don't use all caps */
+@layer components {
+  .btn {
+    text-transform: none;
+    font-weight: normal;
+  }
+}

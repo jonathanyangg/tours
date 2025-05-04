@@ -27,7 +27,7 @@ export default function Hero() {
           
           <h1 className="text-4xl font-bold tracking-tight text-primary mb-4 relative">
             <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/80">
-              AI Tour Guide Matching
+              Match-AI
             </span>
           </h1>
           

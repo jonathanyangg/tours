@@ -12,10 +12,12 @@ export default function Home() {
       
       {/* Main Content */}
       <main className="flex-1 p-8 max-w-7xl mx-auto w-full">
-        <Hero />
-        <DatabaseMatches />
-        <RecentMatches />
-        <IndividualMatch />
+        <div className="space-y-4">
+          <Hero />
+          <DatabaseMatches />
+          <RecentMatches />
+          <IndividualMatch />
+        </div>
       </main>
       <Footer />
     </div>

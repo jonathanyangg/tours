@@ -11,6 +11,7 @@ export default function Navbar() {
   const router = useRouter();
   const [userInitial, setUserInitial] = useState('');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
 
   useEffect(() => {
     const fetchUserEmail = async () => {
@@ -24,6 +25,20 @@ export default function Navbar() {
     };
 
     fetchUserEmail();
+
+    // Add scroll event listener
+    const handleScroll = () => {
+      if (window.scrollY > 10) {
+        setIsScrolled(true);
+      } else {
+        setIsScrolled(false);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
   }, []);
 
   const isActive = (path: string) => {
@@ -36,28 +51,35 @@ export default function Navbar() {
   };
 
   return (
-    <div className="sticky top-0 z-50 backdrop-blur-sm bg-white/90 border-b border-base-300">
+    <div className={`sticky top-0 z-50 transition-all duration-300 border-b border-base-300 ${
+      isScrolled ? 'backdrop-blur-md bg-white/75' : 'bg-white/90'
+    }`}>
       <div className="container mx-auto px-4">
         <div className="flex h-16 items-center justify-between">
-          <div className="flex-shrink-0">
+          <div className="flex items-center space-x-1">
             <Link 
               href="/" 
-              className="group flex items-center text-xl font-medium tracking-tight text-primary transition-all duration-200"
+              className={`group relative flex items-center rounded-md px-3 py-2 text-sm font-medium transition-all duration-200 ${
+                isActive('/') 
+                  ? 'text-primary bg-primary/4' 
+                  : 'text-base-content/80 hover:text-primary hover:bg-primary/4'
+              }`}
             >
-              <span className="relative">
-                Home
-                <span className="absolute -bottom-0.5 left-0 h-[2px] w-0 bg-accent-content group-hover:w-full transition-all duration-300 ease-out"></span>
-              </span>
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+              </svg>
+              <span>Home</span>
+              {isActive('/') && (
+                <span className="absolute bottom-0 left-0 h-0.5 w-full bg-primary"></span>
+              )}
             </Link>
-          </div>
-          
-          <div className="flex gap-2 sm:gap-4">
+            
             <Link 
               href="/tour-guides" 
               className={`group relative flex items-center rounded-md px-3 py-2 text-sm font-medium transition-all duration-200 ${
                 isActive('/tour-guides') 
-                  ? 'text-primary bg-primary/5' 
-                  : 'text-base-content/80 hover:text-primary hover:bg-primary/5'
+                  ? 'text-primary bg-primary/4' 
+                  : 'text-base-content/80 hover:text-primary hover:bg-primary/4'
               }`}
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -74,8 +96,8 @@ export default function Navbar() {
               href="/upload" 
               className={`group relative flex items-center rounded-md px-3 py-2 text-sm font-medium transition-all duration-200 ${
                 isActive('/upload') 
-                  ? 'text-primary bg-primary/5' 
-                  : 'text-base-content/80 hover:text-primary hover:bg-primary/5'
+                  ? 'text-primary bg-primary/4' 
+                  : 'text-base-content/80 hover:text-primary hover:bg-primary/4'
               }`}
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -91,7 +113,7 @@ export default function Navbar() {
           <div className="relative">
             <button
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-              className={`relative flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-primary text-primary-content transition-all duration-300 ease-out hover:scale-105 hover:shadow-md ${isDropdownOpen ? 'ring-2 ring-accent-content' : ''}`}
+              className={`relative flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-primary/90 text-primary-content transition-all duration-300 ease-out hover:scale-105 hover:shadow-md ${isDropdownOpen ? 'ring-2 ring-accent-content' : ''}`}
             >
               <span className="text-sm font-medium">{userInitial}</span>
             </button>
@@ -124,8 +146,7 @@ export default function Navbar() {
                 <form action={logout} className="w-full">
                   <button 
                     type="submit" 
-                    className="flex w-full items-center gap-2 px-4 py-2.5 text-sm text-error hover:bg-error/5"
-                    onClick={() => setIsDropdownOpen(false)}
+                    className="flex w-full items-center gap-2 px-4 py-2.5 text-sm text-error hover:bg-error/4"
                   >
                     <svg 
                       xmlns="http://www.w3.org/2000/svg" 

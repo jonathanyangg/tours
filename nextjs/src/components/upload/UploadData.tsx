@@ -51,7 +51,7 @@ export default function UploadData() {
           </div>
           <Link 
             href="/tour-guides"
-            className="btn btn-primary"
+            className="btn bg-base-100 text-info-content border-info/70 hover:bg-info/70"
           >
             View Tour Guides
           </Link>
