@@ -60,4 +60,4 @@ async def delete_schema(api_keys=Depends(get_token_then_APIS)):
             return {"status": "success", "message": "TourGuide schema deleted successfully"}
         return {"status": "not_found", "message": "TourGuide schema does not exist"}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) 
+        raise HTTPException(status_code=500, detail=str(e))
