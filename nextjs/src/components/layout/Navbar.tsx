@@ -146,7 +146,7 @@ export default function Navbar() {
                 <form action={logout} className="w-full">
                   <button 
                     type="submit" 
-                    className="flex w-full items-center gap-2 px-3 sm:px-4 py-2 text-xs sm:text-sm text-error hover:bg-error/4"
+                    className="flex w-full items-center gap-2 px-3 sm:px-4 py-2 text-xs sm:text-sm text-error hover:bg-error/10"
                   >
                     <svg 
                       xmlns="http://www.w3.org/2000/svg" 
