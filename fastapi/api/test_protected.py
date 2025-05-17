@@ -35,7 +35,6 @@ async def get_weaviate_credentials(api_keys=Depends(get_token_then_APIS)):
         visiting_students_weaviate_api_key = api_keys["visiting_students_weaviate_api_key"]
         openai_api_key = api_keys["openai_api_key"]
 
-
         return {
             "tour_guides_weaviate_url": tour_guides_weaviate_url,
             "tour_guides_weaviate_api_key": tour_guides_weaviate_api_key,

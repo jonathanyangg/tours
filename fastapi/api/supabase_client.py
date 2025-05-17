@@ -10,8 +10,9 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 load_dotenv()
-URL = os.getenv("NEXT_PUBLIC_SUPABASE_URL")
-KEY = os.getenv("NEXT_PUBLIC_SUPABASE_ANON_KEY")
+URL = os.environ.get("NEXT_PUBLIC_SUPABASE_URL")
+KEY = os.environ.get("NEXT_PUBLIC_SUPABASE_ANON_KEY")
+SERVICE_KEY = os.environ.get("NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY")
 
 @contextmanager
 def get_supabase_client():
@@ -30,5 +31,16 @@ def get_supabase_client():
             # This is a placeholder for when/if they add one
             logger.info("Supabase client context exited")
 
-# Create a global client for backward compatibility
-# This will be deprecated in favor of the context manager
+@contextmanager
+def get_admin_supabase_client():
+    client = None
+    try:
+        client = create_client(URL, SERVICE_KEY)
+        logger.info("Successfully created Admin Supabase client")
+        yield client
+    except Exception as e:
+        logger.error(f"Failed to create Admin Supabase client: {e}")
+        raise
+    finally:
+        if client:
+            logger.info("Admin Supabase client context exited")

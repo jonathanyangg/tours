@@ -47,7 +47,7 @@ def delete_visiting_student_schema(visiting_students_weaviate_url=None, visiting
         logger.error(f"Error deleting VisitingStudent schema: {e}")
         raise
 
-@router.delete("/visiting-students/schema")
+@router.delete("/schema")
 async def delete_schema(api_keys=Depends(get_token_then_APIS)):
     """Endpoint to delete the visiting student schema. Use with caution as this will delete all visiting student data."""
     try:

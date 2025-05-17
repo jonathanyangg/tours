@@ -17,21 +17,47 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Include the deletion routers
+app.include_router(
+    tour_guide_deletion_router, 
+    prefix="/api/tour-guides", 
+    tags=["tour-guide-deletion"]
+)
+
+app.include_router(
+    visiting_student_deletion_router, 
+    prefix="/api/visiting-students", 
+    tags=["visiting-student-deletion"]
+)
+
 # Include the tour guides router
-app.include_router(tour_guides_router, prefix="/api", tags=["tour-guides"])
+app.include_router(
+    tour_guides_router, 
+    prefix="/api", 
+    tags=["tour-guides"]
+)
 
 # Include the visiting students router
-app.include_router(visiting_students_router, prefix="/api", tags=["visiting-students"])
+app.include_router(
+    visiting_students_router, 
+    prefix="/api", 
+    tags=["visiting-students"]
+)
 
-# Include the deletion routers
-app.include_router(tour_guide_deletion_router, prefix="/api", tags=["tour-guide-deletion"])
-app.include_router(visiting_student_deletion_router, prefix="/api", tags=["visiting-student-deletion"])
 
 # Include the matching router
-app.include_router(matching_router, prefix="/api", tags=["matching"])
+app.include_router(
+    matching_router, 
+    prefix="/api", 
+    tags=["matching"]
+)
 
 # Include the test protected routes
-app.include_router(test_protected_router, prefix="/api", tags=["test-auth"])
+app.include_router(
+    test_protected_router, 
+    prefix="/api", 
+    tags=["test-auth"]
+)
 
 @app.get("/")
 def health_check():

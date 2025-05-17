@@ -3,15 +3,14 @@ from pydantic import BaseModel
 from typing import Optional
 import weaviate
 from weaviate.classes.init import Auth
-from weaviate.collections.classes.config import DataType
 from weaviate.collections.classes.filters import Filter
+import weaviate.classes as wvc
 import os
 from dotenv import load_dotenv
 import logging
 import json
-import weaviate.collections.classes.config as wvc
 from contextlib import contextmanager
-from ..auth import get_token_then_APIS
+from ..auth import get_token_then_APIS, get_school_api_keys
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -49,6 +48,7 @@ def get_weaviate_client(visiting_students_weaviate_url=None, visiting_students_w
             logger.info("Closed Weaviate connection")
 
 class VisitingStudent(BaseModel):
+    school: str
     name: str
     email: str
     gender: str
@@ -74,6 +74,13 @@ def create_schema(visiting_students_weaviate_url=None, visiting_students_weaviat
             
             if "VisitingStudent" not in existing_collections:
                 properties = [
+                    wvc.config.Property(
+                        name="school",
+                        data_type=wvc.config.DataType.TEXT,
+                        description="School of the visiting student",
+                        indexFilterable=True,
+                        indexSearchable=True
+                    ),
                     wvc.config.Property(
                         name="name",
                         data_type=wvc.config.DataType.TEXT,
@@ -178,36 +185,23 @@ def create_schema(visiting_students_weaviate_url=None, visiting_students_weaviat
                         description="A text representation of the student's information for vector search",
                         indexFilterable=False,
                         indexSearchable=True,
-                        tokenization="word"
+                        tokenization=wvc.config.Tokenization.WORD
                     )
                 ]
                 
                 # Configure the OpenAI vectorizer
                 vectorizer_config = wvc.config.Configure.NamedVectors.text2vec_openai(
-                    name="text_vector",
-                    source_properties=["text_representation"],
-                    model=EMBEDDING_MODEL,
-                    dimensions=3072,
-                    model_options={
-                        "baseURL": "https://api.openai.com/v1",
-                        "temperature": 0,  # More deterministic results
-                        "maxTokens": 8000  # Maximum context length
-                    }
-                )
+                name="text_vector",
+                source_properties=["text_representation"],
+                model=EMBEDDING_MODEL,
+                dimensions=3072
+            )
                 
                 client.collections.create(
                     name="VisitingStudent",
                     description="A visiting student with their information and vector embedding",
                     properties=properties,
                     vectorizer_config=[vectorizer_config],
-                    inverted_index_config={
-                        "indexTimestamps": True,  # Enable timestamp indexing
-                        "stopwords": {
-                            "preset": "en",  # Use English stopwords
-                            "additions": [],  # Add custom stopwords if needed
-                            "removals": []    # Remove stopwords if needed
-                        }
-                    }
                 )
                 logger.info("Created VisitingStudent schema in Weaviate")
             else:
@@ -217,14 +211,22 @@ def create_schema(visiting_students_weaviate_url=None, visiting_students_weaviat
         raise
 
 @router.post("/visiting-students")
-async def create_visiting_student(student: VisitingStudent, api_keys=Depends(get_token_then_APIS)):
+async def create_visiting_student(student: VisitingStudent):
     """Create a new visiting student record and store it in Weaviate."""
     try:
-        logger.info(f"Received visiting student data: {json.dumps(student.dict(), indent=2)}")
+        logger.info(f"Received visiting student data: {json.dumps(student.model_dump(), indent=2)}")
+        # visiting_students_weaviate_url = api_keys["visiting_students_weaviate_url"]
+        # visiting_students_weaviate_api_key = api_keys["visiting_students_weaviate_api_key"]
+        school_ceeb = student.school
+        # openai_api_key = api_keys["openai_api_key"]
+        api_keys = get_school_api_keys(school_ceeb)
+        
         visiting_students_weaviate_url = api_keys["visiting_students_weaviate_url"]
         visiting_students_weaviate_api_key = api_keys["visiting_students_weaviate_api_key"]
         openai_api_key = api_keys["openai_api_key"]
-        
+        logger.info(f"Visiting students weaviate url: {visiting_students_weaviate_url}")
+        logger.info(f"Visiting students weaviate api key: {visiting_students_weaviate_api_key}")
+        logger.info(f"Openai api key: {openai_api_key}")
         # Ensure the schema exists
         create_schema(visiting_students_weaviate_url, visiting_students_weaviate_api_key, openai_api_key)
 
@@ -258,6 +260,7 @@ async def create_visiting_student(student: VisitingStudent, api_keys=Depends(get
 
             # Create the student object
             student_data = {
+                "school": student.school,
                 "name": student.name,
                 "email": student.email,
                 "gender": student.gender,
@@ -336,7 +339,7 @@ async def get_visiting_students(api_keys=Depends(get_token_then_APIS)):
             response = visiting_student_collection.query.fetch_objects(
                 limit=100,
                 return_properties=[
-                    "name", "email", "gender", "grade", "residential_status",
+                    "school", "name", "email", "gender", "grade", "residential_status",
                     "city_country", "sports", "extracurricular_activities",
                     "academic_interests", "additional_information", "race",
                     "tour_datetime"
@@ -376,7 +379,7 @@ async def get_unmatched_students(api_keys=Depends(get_token_then_APIS)):
                 filters=Filter.by_property("is_matched").equal(0),  # Use 0 for unmatched
                 limit=100,
                 return_properties=[
-                    "name", "email", "gender", "grade", "residential_status",
+                    "school", "name", "email", "gender", "grade", "residential_status",
                     "city_country", "sports", "extracurricular_activities",
                     "academic_interests", "additional_information", "race",
                     "tour_datetime", "is_matched", "matched_tour_guide"
@@ -416,7 +419,7 @@ async def get_matched_students(api_keys=Depends(get_token_then_APIS)):
                 filters=Filter.by_property("is_matched").equal(1),  # Use 1 for matched
                 limit=100,
                 return_properties=[
-                    "name", "email", "gender", "grade", "residential_status",
+                    "school", "name", "email", "gender", "grade", "residential_status",
                     "city_country", "sports", "extracurricular_activities",
                     "academic_interests", "additional_information", "race",
                     "tour_datetime", "is_matched", "matched_tour_guide"
@@ -484,52 +487,7 @@ async def update_student_match(student_email: str, tour_guide_id: str, api_keys=
     except Exception as e:
         logger.error(f"Error updating student match status: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
-
-@router.delete("/visiting-students/{student_email}")
-async def delete_visiting_student(student_email: str, api_keys=Depends(get_token_then_APIS)):
-    """Delete a visiting student from the database."""
-    try:
-        logger.info(f"Attempting to delete visiting student with email: {student_email}")
-        visiting_students_weaviate_url = api_keys["visiting_students_weaviate_url"]
-        visiting_students_weaviate_api_key = api_keys["visiting_students_weaviate_api_key"]
-        openai_api_key = api_keys["openai_api_key"]
-        
-        with get_weaviate_client(visiting_students_weaviate_url, visiting_students_weaviate_api_key, openai_api_key) as client:
-            # Get the VisitingStudent collection
-            visiting_student_collection = client.collections.get("VisitingStudent")
-            logger.info("Successfully retrieved VisitingStudent collection")
-            
-            # Find the student by email
-            student = visiting_student_collection.query.fetch_objects(
-                filters=Filter.by_property("email").equal(student_email),
-                limit=1
-            )
-            logger.info(f"Query result: {student}")
-            
-            if not student.objects:
-                logger.error(f"Student not found with email: {student_email}")
-                raise HTTPException(status_code=404, detail="Visiting student not found")
-            
-            # Delete the student
-            student_uuid = student.objects[0].uuid
-            logger.info(f"Found student with UUID: {student_uuid}")
-            
-            # Use the correct method to delete the object
-            visiting_student_collection.data.delete_many(
-                where=Filter.by_property("email").equal(student_email)
-            )
-            logger.info(f"Successfully deleted visiting student with email: {student_email}")
-            
-            return {
-                "status": "success",
-                "message": "Visiting student deleted successfully"
-            }
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error deleting visiting student: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
+    
 
 @router.post("/visiting-students/{student_email}/unmatch")
 async def unmatch_student(student_email: str, api_keys=Depends(get_token_then_APIS)):
@@ -576,3 +534,49 @@ async def unmatch_student(student_email: str, api_keys=Depends(get_token_then_AP
     except Exception as e:
         logger.error(f"Error unmatching student: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e)) 
+
+@router.delete("/visiting-students/{student_email}")
+async def delete_visiting_student(student_email: str, api_keys=Depends(get_token_then_APIS)):
+    """Delete a visiting student from the database."""
+    try:
+        logger.info(f"Attempting to delete visiting student with email: {student_email}")
+        visiting_students_weaviate_url = api_keys["visiting_students_weaviate_url"]
+        visiting_students_weaviate_api_key = api_keys["visiting_students_weaviate_api_key"]
+        openai_api_key = api_keys["openai_api_key"]
+        
+        with get_weaviate_client(visiting_students_weaviate_url, visiting_students_weaviate_api_key, openai_api_key) as client:
+            # Get the VisitingStudent collection
+            visiting_student_collection = client.collections.get("VisitingStudent")
+            logger.info("Successfully retrieved VisitingStudent collection")
+            
+            # Find the student by email
+            student = visiting_student_collection.query.fetch_objects(
+                filters=Filter.by_property("email").equal(student_email),
+                limit=1
+            )
+            logger.info(f"Query result: {student}")
+            
+            if not student.objects:
+                logger.error(f"Student not found with email: {student_email}")
+                raise HTTPException(status_code=404, detail="Visiting student not found")
+            
+            # Delete the student
+            student_uuid = student.objects[0].uuid
+            logger.info(f"Found student with UUID: {student_uuid}")
+            
+            # Use the correct method to delete the object
+            visiting_student_collection.data.delete_many(
+                where=Filter.by_property("email").equal(student_email)
+            )
+            logger.info(f"Successfully deleted visiting student with email: {student_email}")
+            
+            return {
+                "status": "success",
+                "message": "Visiting student deleted successfully"
+            }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error deleting visiting student: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
