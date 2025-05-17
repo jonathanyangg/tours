@@ -71,7 +71,7 @@ def get_token_then_APIS(credentials: HTTPAuthorizationCredentials = Depends(bear
 
             # Step 1: Get the CEEB code associated with this user
             user_id = response.user.id
-            user_school_response = supabase.table('school_weaviate_credentials').select('school_CEEB').eq('user_id', user_id).execute()
+            user_school_response = supabase.table('admin_to_school').select('school_CEEB').eq('user_id', user_id).execute()
             
             if not user_school_response.data:
                 raise HTTPException(
