@@ -1,19 +1,14 @@
 from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
 from fastapi.responses import JSONResponse
 import pandas as pd
-import tempfile
-import os
-from typing import List, Dict
-import json
+from typing import Dict
 import io
 import logging
 from dotenv import load_dotenv
 import weaviate
-import numpy as np
 from weaviate.classes.init import Auth
 import weaviate.classes as wvc
 from contextlib import contextmanager
-from openai import OpenAI
 from ..auth import get_token_then_APIS
 
 # Configure logging
