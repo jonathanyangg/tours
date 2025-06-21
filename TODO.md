@@ -2,11 +2,6 @@
 
 ## 🚨 CRITICAL - Fix Immediately
 
-### 1. Remove Hardcoded Credentials
-- **File**: `fastapi/get_token_and_test.py` (lines 15-16)
-- **Action**: Delete hardcoded email/password, use environment variables
-- **Risk**: Account compromise, credential exposure in git history
-
 ### 2. Sanitize Error Messages
 - **File**: `fastapi/api/auth.py` (lines 28, 89)
 - **Action**: Replace `detail=f"Invalid authentication credentials: {str(e)}"` with generic message

@@ -63,7 +63,6 @@ uvicorn api.main:app --reload  # Development server
 ## Critical Security Notes
 
 ⚠️ **SECURITY VULNERABILITIES PRESENT** - Check `TODO.md` for critical items:
-- Hardcoded credentials in `fastapi/get_token_and_test.py`
 - Information disclosure in error messages
 - CORS configuration needs production domains
 - Missing rate limiting and token validation
