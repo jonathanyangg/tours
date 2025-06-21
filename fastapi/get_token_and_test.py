@@ -12,10 +12,8 @@ def get_token_and_test():
     print("To test the protected endpoint, you need to sign in with a Supabase account.")
     email = os.environ.get("email")
     password = os.environ.get("password")
+    print(email, password)
 
-    email = "jonathan.yang.x@gmail.com"
-    password = "Tc13042381!"
-    
     try:
         # Sign in with Supabase
         print("\nAttempting to sign in to Supabase...")

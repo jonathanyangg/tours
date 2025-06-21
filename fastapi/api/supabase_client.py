@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 load_dotenv()
 URL = os.environ.get("NEXT_PUBLIC_SUPABASE_URL")
 KEY = os.environ.get("NEXT_PUBLIC_SUPABASE_ANON_KEY")
-SERVICE_KEY = os.environ.get("NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY")
+SERVICE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
 
 @contextmanager
 def get_supabase_client():
