@@ -13,7 +13,7 @@ export default function Home() {
       {/* Main Content */}
       <main className="flex-1 p-8 max-w-7xl mx-auto w-full">
         <div className="space-y-4">
-          {/* <Hero /> */}
+          <Hero />
           <DatabaseMatches />
           <RecentMatches />
           {/* <IndividualMatch /> */}

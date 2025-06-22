@@ -35,17 +35,6 @@ export default function Hero() {
             Match prospective students with the perfect tour guides based on their interests, background, and preferences using our intelligent matching system.
           </p>
           
-          <div className="flex flex-wrap gap-2 mt-5 justify-center">
-            <span className="inline-flex items-center rounded-full bg-success/40 px-2.5 py-0.5 text-xs font-medium text-success-content">
-              AI-Powered
-            </span>
-            <span className="inline-flex items-center rounded-full bg-info/40 px-2.5 py-0.5 text-xs font-medium text-info-content">
-              Personalized
-            </span>
-            <span className="inline-flex items-center rounded-full bg-warning/40 px-2.5 py-0.5 text-xs font-medium text-warning-content">
-              Student-Focused
-            </span>
-          </div>
         </div>
       </div>
     </div>
