@@ -390,22 +390,17 @@ export default function DatabaseMatches() {
         <div className="flex justify-between items-center mb-2">
           <h2 className="text-xl font-normal text-base-content">Find Matches from Database</h2>
           <button 
-            className="btn bg-base-100 text-info-content border-info/70 hover:bg-info/70"
+            className="btn btn-ghost btn-sm hover:bg-base-200 p-2"
             onClick={handleRefresh}
             disabled={refreshing}
+            title="Refresh unmatched students"
           >
             {refreshing ? (
-              <>
-                <span className="loading loading-spinner loading-xs mr-2"></span>
-                Refreshing...
-              </>
+              <span className="loading loading-spinner loading-xs"></span>
             ) : (
-              <>
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1 text-info-content" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
-                Refresh
-              </>
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-base-content/70" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
             )}
           </button>
         </div>
