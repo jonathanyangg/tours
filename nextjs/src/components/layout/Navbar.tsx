@@ -45,10 +45,7 @@ export default function Navbar() {
     return pathname === path;
   };
 
-  const handleCredentialsClick = () => {
-    router.push('/credentials');
-    setIsDropdownOpen(false);
-  };
+
 
   return (
     <div className={`sticky top-0 z-50 transition-all duration-300 border-b border-base-300 ${
@@ -122,27 +119,6 @@ export default function Navbar() {
               <div 
                 className="animate-fadeIn absolute right-0 mt-2 w-48 sm:w-52 origin-top-right rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none"
               >
-                <button
-                  onClick={handleCredentialsClick}
-                  className="flex w-full items-center gap-2 px-3 sm:px-4 py-2 text-xs sm:text-sm text-base-content hover:bg-base-200"
-                >
-                  <svg 
-                    xmlns="http://www.w3.org/2000/svg" 
-                    className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-base-content/70" 
-                    fill="none" 
-                    viewBox="0 0 24 24" 
-                    stroke="currentColor"
-                  >
-                    <path 
-                      strokeLinecap="round" 
-                      strokeLinejoin="round" 
-                      strokeWidth="1.5" 
-                      d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" 
-                    />
-                  </svg>
-                  <span>API Credentials</span>
-                </button>
-                
                 <form action={logout} className="w-full">
                   <button 
                     type="submit" 

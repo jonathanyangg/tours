@@ -328,32 +328,7 @@ export async function unmatchStudent(studentEmail: string) {
   }
 }
 
-/**
- * Get user credentials from the backend
- * @param token The JWT token for authentication
- * @returns The user's API credentials
- */
-export async function getUserCredentials(token: string) {
-  try {
-    const response = await fetch(`${API_BASE_URL}/user-credentials`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-    });
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.detail || 'Failed to fetch user credentials');
-    }
-
-    return await response.json();
-  } catch (error) {
-    console.error('Error fetching user credentials:', error);
-    throw error;
-  }
-}
 
 /**
  * Delete a visiting student
