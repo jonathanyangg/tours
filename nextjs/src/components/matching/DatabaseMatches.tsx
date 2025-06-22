@@ -11,44 +11,66 @@ import { toast } from 'react-hot-toast';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { useAuth } from '@/app/supabase/AuthContext';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Separator } from '@/components/ui/separator';
+import { 
+  Search, 
+  Calendar, 
+  RefreshCw, 
+  Users, 
+  Trash2, 
+  ChevronDown, 
+  ChevronUp,
+  Loader2,
+  UserCheck,
+  AlertCircle,
+  CheckCircle2
+} from 'lucide-react';
+import { cn } from '@/lib/utils';
 
-// Add custom styles for the date picker
+// Custom styles for the date picker to match shadcn theme
 const datePickerStyles = `
   .react-datepicker {
     font-family: inherit;
     border-radius: 0.5rem;
-    border: 1px solid hsl(var(--b3));
+    border: 1px solid hsl(var(--border));
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    background-color: hsl(var(--popover));
   }
   .react-datepicker__header {
-    background-color: hsl(var(--b1));
-    border-bottom: 1px solid hsl(var(--b3));
+    background-color: hsl(var(--muted));
+    border-bottom: 1px solid hsl(var(--border));
   }
   .react-datepicker__current-month,
   .react-datepicker-time__header,
   .react-datepicker-year-header {
-    color: hsl(var(--bc));
+    color: hsl(var(--foreground));
     font-weight: 500;
   }
   .react-datepicker__day-name,
   .react-datepicker__day,
   .react-datepicker__time-name {
-    color: hsl(var(--bc));
+    color: hsl(var(--foreground));
   }
   .react-datepicker__day:hover {
-    background-color: hsl(var(--b2));
+    background-color: hsl(var(--accent));
   }
   .react-datepicker__day--selected,
   .react-datepicker__day--in-selecting-range,
   .react-datepicker__day--in-range {
-    background-color: hsl(var(--p));
-    color: white;
+    background-color: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
   }
   .react-datepicker__day--keyboard-selected {
-    background-color: hsl(var(--p) / 50%);
+    background-color: hsl(var(--primary) / 50%);
   }
   .react-datepicker__input-container input {
-    font-size: 1rem;
+    font-size: 0.875rem;
   }
 `;
 
@@ -136,7 +158,7 @@ export default function DatabaseMatches() {
     } catch (err) {
       console.error('Error fetching visiting students:', err);
       setError(err instanceof Error ? err.message : 'An error occurred');
-      setVisitingStudents([]); // Clear the students list on error
+      setVisitingStudents([]);
     } finally {
       setLoading(false);
     }
@@ -168,7 +190,7 @@ export default function DatabaseMatches() {
       });
       
       const matchData = {
-        student_id: student.email, // Using email as ID
+        student_id: student.email,
         gender: student.gender,
         grade: student.grade,
         residential_status: student.residential_status,
@@ -233,16 +255,13 @@ export default function DatabaseMatches() {
       console.log('Choosing match for student:', studentEmail, 'with tour guide:', tourGuideId);
       await updateStudentMatch(studentEmail, tourGuideId);
       
-      // Remove the student from the list
       setVisitingStudents(prev => prev.filter(student => student.email !== studentEmail));
       
-      // Show success message
       setMatchMessages(prev => ({
         ...prev,
         [studentEmail]: 'Successfully matched with tour guide!'
       }));
       
-      // Hide the matches after a short delay
       setTimeout(() => {
         setExpandedStudents(prev => {
           const newSet = new Set(prev);
@@ -307,17 +326,14 @@ export default function DatabaseMatches() {
 
   // Filter students based on search query and date range
   const filteredStudents = visitingStudents.filter(student => {
-    // If both search query and date range are empty, show all students
     if (!searchQuery.trim() && !startDate && !endDate) return true;
     
-    // Text search (name or email)
     if (searchType === 'text' && searchQuery.trim()) {
       const query = searchQuery.toLowerCase().trim();
       const matchesText = 
         student.name.toLowerCase().includes(query) ||
         student.email.toLowerCase().includes(query);
       
-      // If date range is also set, check both conditions
       if (startDate || endDate) {
         return matchesText && isInDateRange(student.tour_datetime);
       }
@@ -325,7 +341,6 @@ export default function DatabaseMatches() {
       return matchesText;
     }
     
-    // Date range search
     if (searchType === 'date' && (startDate || endDate)) {
       return isInDateRange(student.tour_datetime);
     }
@@ -336,10 +351,8 @@ export default function DatabaseMatches() {
   const handleMatchAll = async () => {
     setIsMatchingAll(true);
     try {
-      // Process each student sequentially to avoid overwhelming the server
       for (const student of filteredStudents) {
         try {
-          // First, get the matches for the student
           const matchData = {
             student_id: student.email,
             gender: student.gender,
@@ -357,13 +370,8 @@ export default function DatabaseMatches() {
           const result = await matchTourGuidesFromDatabase(matchData);
           
           if (result.status === 'success' && result.matches.length > 0) {
-            // Get the best match (first one has the highest score)
             const bestMatch = result.matches[0];
-            
-            // Automatically choose the best match
             await handleChooseMatch(student.email, bestMatch.student_id);
-            
-            // Show success message
             toast.success(`Matched ${student.name} with best tour guide`);
           } else {
             toast.error(`No matches found for ${student.name}`);
@@ -374,7 +382,6 @@ export default function DatabaseMatches() {
         }
       }
       
-      // Refresh the list after all matches are processed
       await fetchVisitingStudents();
     } catch (err) {
       console.error('Error in match all process:', err);
@@ -385,255 +392,311 @@ export default function DatabaseMatches() {
   };
 
   return (
-    <div className="card bg-white shadow-md border border-base-300 mb-8">
-      <div className="p-6">
-        <div className="flex justify-between items-center mb-2">
-          <h2 className="text-xl font-normal text-base-content">Find Matches from Database</h2>
-          <button 
-            className="btn btn-ghost btn-sm hover:bg-base-200 p-2"
+    <Card className="mb-8">
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <div className="space-y-1">
+            <CardTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5" />
+              Database Matches
+            </CardTitle>
+            <CardDescription>
+              Connect to the visiting students database and find optimal tour guide matches.
+            </CardDescription>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={handleRefresh}
             disabled={refreshing}
-            title="Refresh unmatched students"
+            className="h-8 w-8 p-0"
           >
-            {refreshing ? (
-              <span className="loading loading-spinner loading-xs"></span>
-            ) : (
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-base-content/70" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
-            )}
-          </button>
+            <RefreshCw className={cn("h-4 w-4", refreshing && "animate-spin")} />
+          </Button>
         </div>
-        <p className="text-sm text-base-content/70 mb-6">Connect to the visiting students database and find optimal tour guide matches.</p>
-        
-        <div className="flex flex-col gap-6">
-          <div className="form-control">
-            <label className="label">
-              <span className="label-text text-base-content/80 font-normal">Search Criteria</span>
-            </label>
-            <div className="flex flex-col gap-4">
-              <div className="flex gap-2">
-                <div className="flex gap-2">
-                  <button 
-                    className={`btn ${searchType === 'text' ? 'bg-base-300 text-base-content' : 'btn-ghost'} flex items-center gap-2 transition-all duration-200 hover:scale-105`}
-                    onClick={() => setSearchType('text')}
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
-                    Name/Email Search
-                  </button>
-                  <button 
-                    className={`btn ${searchType === 'date' ? 'bg-base-300 text-base-content' : 'btn-ghost'} flex items-center gap-2 transition-all duration-200 hover:scale-105`}
-                    onClick={() => setSearchType('date')}
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                    Date Range Search
-                  </button>
-                </div>
-              </div>
-              
-              {searchType === 'text' ? (
-                <div className="flex gap-2">
-                  <input 
-                    type="text" 
-                    placeholder="Search by name or email..." 
-                    className="input input-bordered flex-1 bg-base-100 border-base-300 text-base-content placeholder:text-base-content/40 placeholder:text-sm"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                  />
-                </div>
-              ) : (
-                <div className="flex items-center">
-                  <div className="w-52 mr-2">
-                    <DatePicker
-                      selected={startDate}
-                      onChange={(date: Date | null) => setStartDate(date)}
-                      selectsStart
-                      startDate={startDate}
-                      endDate={endDate}
-                      className="input input-bordered w-full bg-base-100 border-base-300 text-base-content text-sm placeholder:text-sm placeholder:text-base-content/40"
-                      placeholderText="Start date"
-                      dateFormat="MM/dd/yyyy"
-                    />
-                    <style jsx global>{datePickerStyles}</style>
-                  </div>
-                  <span className="text-base-content/60 mr-2">to</span>
-                  <div className="w-52 mr-3">
-                    <DatePicker
-                      selected={endDate}
-                      onChange={(date: Date | null) => setEndDate(date)}
-                      selectsEnd
-                      startDate={startDate}
-                      endDate={endDate}
-                      minDate={startDate || undefined}
-                      className="input input-bordered w-full bg-base-100 border-base-300 text-base-content text-sm placeholder:text-sm placeholder:text-base-content/40"
-                      placeholderText="End date" 
-                      dateFormat="MM/dd/yyyy"
-                    />
-                  </div>
-                  <button 
-                    className="btn btn-sm bg-base-100 text-info-content border-info/70 hover:bg-info/70"
-                    onClick={() => {
-                      setStartDate(null);
-                      setEndDate(null);
-                    }}
-                  >
-                    Clear
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
+      </CardHeader>
 
-          {loading ? (
-            <div className="flex justify-center items-center h-64">
-              <span className="loading loading-spinner loading-lg text-primary"></span>
-            </div>
-          ) : error ? (
-            <div className="p-4 bg-error/20 text-error-content rounded-md">
-              <h3 className="font-medium mb-2">Error</h3>
-              <p>{error}</p>
-            </div>
-          ) : filteredStudents.length === 0 ? (
-            <div className="p-4 bg-base-100 text-base-content/70 rounded-md">
-              <p>No pending matches</p>
-            </div>
+      <CardContent className="space-y-6">
+        {/* Search Controls */}
+        <div className="space-y-4">
+          <div className="flex gap-2">
+            <Button
+              variant={searchType === 'text' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setSearchType('text')}
+              className="flex items-center gap-2"
+            >
+              <Search className="h-4 w-4" />
+              Name/Email
+            </Button>
+            <Button
+              variant={searchType === 'date' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setSearchType('date')}
+              className="flex items-center gap-2"
+            >
+              <Calendar className="h-4 w-4" />
+              Date Range
+            </Button>
+          </div>
+          
+          {searchType === 'text' ? (
+            <Input
+              placeholder="Search by name or email..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="max-w-md"
+            />
           ) : (
-            <div className="overflow-x-auto">
-              <table className="table w-full">
-                <thead>
-                  <tr>
-                    <th className="font-medium">Name</th>
-                    <th className="font-medium">Email</th>
-                    <th className="font-medium">Tour Date</th>
-                    <th className="font-medium">Action</th>
-                  </tr>
-                </thead>
-                <tbody>
+            <div className="flex items-center gap-2 flex-wrap">
+              <div className="w-40">
+                <DatePicker
+                  selected={startDate}
+                  onChange={(date: Date | null) => setStartDate(date)}
+                  selectsStart
+                  startDate={startDate}
+                  endDate={endDate}
+                  className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                  placeholderText="Start date"
+                  dateFormat="MM/dd/yyyy"
+                />
+                <style jsx global>{datePickerStyles}</style>
+              </div>
+              <span className="text-muted-foreground">to</span>
+              <div className="w-40">
+                <DatePicker
+                  selected={endDate}
+                  onChange={(date: Date | null) => setEndDate(date)}
+                  selectsEnd
+                  startDate={startDate}
+                  endDate={endDate}
+                  minDate={startDate || undefined}
+                  className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                  placeholderText="End date" 
+                  dateFormat="MM/dd/yyyy"
+                />
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setStartDate(null);
+                  setEndDate(null);
+                }}
+              >
+                Clear
+              </Button>
+            </div>
+          )}
+        </div>
+
+        <Separator />
+
+        {/* Content */}
+        {loading ? (
+          <div className="flex justify-center items-center h-64">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          </div>
+        ) : error ? (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        ) : filteredStudents.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground">
+            <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
+            <p>No pending matches found</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {/* Match All Button */}
+            <div className="flex justify-end">
+              <Button
+                onClick={handleMatchAll}
+                disabled={isMatchingAll || filteredStudents.length === 0}
+                className="flex items-center gap-2"
+              >
+                {isMatchingAll ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Matching All...
+                  </>
+                ) : (
+                  <>
+                    <UserCheck className="h-4 w-4" />
+                    Match All ({filteredStudents.length})
+                  </>
+                )}
+              </Button>
+            </div>
+
+            {/* Students Table */}
+            <div className="border rounded-lg">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Student</TableHead>
+                    <TableHead>Tour Date</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {filteredStudents.map((student, index) => (
                     <React.Fragment key={index}>
-                      <tr className="hover">
-                        <td>{student.name}</td>
-                        <td>{student.email}</td>
-                        <td>{new Date(student.tour_datetime).toLocaleString()}</td>
-                        <td>
-                          <div className="flex justify-between gap-2">
-                            <button 
-                              className="btn bg-base-100 text-success-content border-success/70 hover:bg-success/70"
+                      <TableRow className="group">
+                        <TableCell>
+                          <div className="space-y-1">
+                            <div className="font-medium">{student.name}</div>
+                            <div className="text-sm text-muted-foreground">{student.email}</div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="text-sm">
+                            {new Date(student.tour_datetime).toLocaleDateString()}
+                            <div className="text-muted-foreground">
+                              {new Date(student.tour_datetime).toLocaleTimeString([], { 
+                                hour: '2-digit', 
+                                minute: '2-digit' 
+                              })}
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          {matchStatuses[student.email] === 'success' && (
+                            <Badge variant="default" className="bg-green-100 text-green-800 hover:bg-green-100">
+                              <CheckCircle2 className="h-3 w-3 mr-1" />
+                              Matched
+                            </Badge>
+                          )}
+                          {matchStatuses[student.email] === 'warning' && (
+                            <Badge variant="secondary">
+                              <AlertCircle className="h-3 w-3 mr-1" />
+                              No Matches
+                            </Badge>
+                          )}
+                          {matchStatuses[student.email] === 'error' && (
+                            <Badge variant="destructive">
+                              <AlertCircle className="h-3 w-3 mr-1" />
+                              Error
+                            </Badge>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <Button
+                              size="sm"
                               onClick={() => handleMatch(student)}
                               disabled={matchingStudent === student.email}
+                              className="bg-green-600 hover:bg-green-700 text-white"
                             >
                               {matchingStudent === student.email ? (
                                 <>
-                                  <span className="loading loading-spinner loading-xs mr-2"></span>
+                                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
                                   Matching...
                                 </>
                               ) : (
                                 'Match'
                               )}
-                            </button>
-                            <button
-                              className="btn bg-base-100 text-error-content border-error/70 hover:bg-error/70"
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="destructive"
                               onClick={() => handleDeleteStudent(student.email)}
                               disabled={isDeleting === student.email}
                             >
-                              {isDeleting === student.email ? 'Deleting...' : 'Delete'}
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                      {expandedStudents.has(student.email) && (
-                        <tr>
-                          <td colSpan={4} className="px-4 py-3">
-                            <div className="bg-white rounded-lg border border-base-300 shadow overflow-hidden">
-                              {matchStatuses[student.email] === 'error' ? (
-                                <div className="p-3 bg-error/20 text-error-content">
-                                  <p>{matchMessages[student.email]}</p>
-                                </div>
-                              ) : matchStatuses[student.email] === 'warning' ? (
-                                <div className="p-3 bg-warning/20 text-warning-content">
-                                  <p>{matchMessages[student.email]}</p>
-                                </div>
+                              {isDeleting === student.email ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
                               ) : (
-                                <div className="p-3">
-                                  <div className="grid gap-2">
+                                <Trash2 className="h-4 w-4" />
+                              )}
+                            </Button>
+                            {(studentMatches[student.email] || matchMessages[student.email]) && (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => toggleExpanded(student.email)}
+                              >
+                                {expandedStudents.has(student.email) ? (
+                                  <ChevronUp className="h-4 w-4" />
+                                ) : (
+                                  <ChevronDown className="h-4 w-4" />
+                                )}
+                              </Button>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+
+                      {/* Expanded Matches */}
+                      {expandedStudents.has(student.email) && (
+                        <TableRow>
+                          <TableCell colSpan={4} className="p-0">
+                            <div className="border-t bg-muted/20 p-4">
+                              {matchStatuses[student.email] === 'error' ? (
+                                <Alert variant="destructive">
+                                  <AlertCircle className="h-4 w-4" />
+                                  <AlertDescription>{matchMessages[student.email]}</AlertDescription>
+                                </Alert>
+                              ) : matchStatuses[student.email] === 'warning' ? (
+                                <Alert>
+                                  <AlertCircle className="h-4 w-4" />
+                                  <AlertDescription>{matchMessages[student.email]}</AlertDescription>
+                                </Alert>
+                              ) : (
+                                <div className="space-y-3">
+                                  <h4 className="font-medium text-sm">Potential Matches</h4>
+                                  <div className="grid gap-3">
                                     {studentMatches[student.email]?.map((match, matchIndex) => (
-                                      <div key={match.id} className="p-3 bg-base-100 rounded-md border border-base-300 shadow-sm">
-                                        <div className="flex justify-between items-center">
-                                          <div className="grid gap-0.5">
-                                            <h4 className="font-medium text-base-content">Tour Guide {matchIndex + 1}</h4>
-                                            <p className="text-sm text-base-content/70">ID: {match.student_id}</p>
-                                            <div className="flex gap-3 text-sm text-base-content/70">
-                                              <span>Grade: {match.grade}</span>
-                                              <span>•</span>
-                                              <span>Gender: {match.gender}</span>
-                                              <span>•</span>
-                                              <span>Status: {match.residential_status}</span>
+                                      <Card key={match.id} className="p-4">
+                                        <div className="flex justify-between items-start">
+                                          <div className="space-y-2">
+                                            <div className="font-medium">Tour Guide {matchIndex + 1}</div>
+                                            <div className="text-sm text-muted-foreground">ID: {match.student_id}</div>
+                                            <div className="flex gap-4 text-sm">
+                                              <Badge variant="outline">Grade {match.grade}</Badge>
+                                              <Badge variant="outline">{match.gender}</Badge>
+                                              <Badge variant="outline">{match.residential_status}</Badge>
                                             </div>
                                           </div>
-                                          <div className="text-right flex flex-col gap-2">
-                                            <p className="text-base-content font-medium text-sm">{formatSimilarity(1 - (match.distance || 0))} match</p>
-                                            <button
-                                              className="btn btn-xs bg-base-100 text-success-content border-success/70 hover:bg-success/70"
+                                          <div className="text-right space-y-2">
+                                            <div className="text-sm font-medium">
+                                              {formatSimilarity(1 - (match.distance || 0))} match
+                                            </div>
+                                            <Button
+                                              size="sm"
                                               onClick={() => handleChooseMatch(student.email, match.student_id)}
                                               disabled={choosingMatch?.studentId === student.email && choosingMatch?.guideId === match.student_id}
+                                              className="bg-green-600 hover:bg-green-700 text-white"
                                             >
                                               {choosingMatch?.studentId === student.email && choosingMatch?.guideId === match.student_id ? (
                                                 <>
-                                                  <span className="loading loading-spinner loading-xs mr-1"></span>
+                                                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
                                                   Matching...
                                                 </>
                                               ) : (
                                                 'Choose Match'
                                               )}
-                                            </button>
+                                            </Button>
                                           </div>
                                         </div>
-                                      </div>
+                                      </Card>
                                     ))}
                                   </div>
                                 </div>
                               )}
-                              <div className="bg-white px-3 py-2 flex justify-end border-t border-base-300">
-                                <button 
-                                  className="btn btn-xs btn-ghost"
-                                  onClick={() => toggleExpanded(student.email)}
-                                >
-                                  {expandedStudents.has(student.email) ? 'Hide Matches' : 'Show Matches'}
-                                </button>
-                              </div>
                             </div>
-                          </td>
-                        </tr>
+                          </TableCell>
+                        </TableRow>
                       )}
                     </React.Fragment>
                   ))}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             </div>
-          )}
-          
-          <div className="flex justify-end">
-            <button 
-              className="btn bg-base-100 text-info-content border-info/70 hover:bg-info/70"
-              onClick={handleMatchAll}
-              disabled={isMatchingAll}
-            >
-              {isMatchingAll ? (
-                <>
-                  <span className="loading loading-spinner loading-xs mr-2"></span>
-                  Matching All...
-                </>
-              ) : (
-                'Match All'
-              )}
-            </button>
           </div>
-        </div>
-      </div>
-    </div>
+        )}
+      </CardContent>
+    </Card>
   );
 } 
