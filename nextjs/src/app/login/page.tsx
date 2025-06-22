@@ -64,9 +64,9 @@ export default function LoginPage() {
             <Button
               type="submit"
               className="w-full h-10"
-              disabled={state?.isLoading}
+              disabled={state.isLoading}
             >
-              {state?.isLoading ? 'Signing in...' : 'Sign in'}
+              {state.isLoading ? 'Signing in...' : 'Sign in'}
             </Button>
           </form>
         </CardContent>

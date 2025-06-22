@@ -18,7 +18,7 @@ import {
   ChevronDown,
   GraduationCap
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+
 
 type TourGuide = {
   student_id: string;

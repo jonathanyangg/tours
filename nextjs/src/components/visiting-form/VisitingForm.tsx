@@ -127,11 +127,11 @@ export default function VisitingForm() {
             </AlertDescription>
           </Alert>
         ) : (
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={(e) => { handleSubmit(e); }} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               <div className="space-y-2">
                 <Label htmlFor="school">School</Label>
-                <Select name="school" value={formData.school} onValueChange={(value) => setFormData({...formData, school: value})} required>
+                <Select name="school" value={formData.school} onValueChange={(value) => { setFormData({...formData, school: value}); }} required>
                   <SelectTrigger>
                     <SelectValue placeholder="Select School" />
                   </SelectTrigger>
@@ -179,7 +179,7 @@ export default function VisitingForm() {
 
               <div className="space-y-2">
                 <Label htmlFor="gender">Gender</Label>
-                <Select name="gender" value={formData.gender} onValueChange={(value) => setFormData({...formData, gender: value})} required>
+                <Select name="gender" value={formData.gender} onValueChange={(value) => { setFormData({...formData, gender: value}); }} required>
                   <SelectTrigger>
                     <SelectValue placeholder="Select gender" />
                   </SelectTrigger>
@@ -193,7 +193,7 @@ export default function VisitingForm() {
 
               <div className="space-y-2">
                 <Label htmlFor="grade">Grade</Label>
-                <Select name="grade" value={formData.grade} onValueChange={(value) => setFormData({...formData, grade: value})} required>
+                <Select name="grade" value={formData.grade} onValueChange={(value) => { setFormData({...formData, grade: value}); }} required>
                   <SelectTrigger>
                     <SelectValue placeholder="Select grade" />
                   </SelectTrigger>
@@ -208,7 +208,7 @@ export default function VisitingForm() {
 
               <div className="space-y-2">
                 <Label htmlFor="residential_status">Residential Status</Label>
-                <Select name="residential_status" value={formData.residential_status} onValueChange={(value) => setFormData({...formData, residential_status: value})} required>
+                <Select name="residential_status" value={formData.residential_status} onValueChange={(value) => { setFormData({...formData, residential_status: value}); }} required>
                   <SelectTrigger>
                     <SelectValue placeholder="Select status" />
                   </SelectTrigger>

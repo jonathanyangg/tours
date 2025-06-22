@@ -145,7 +145,7 @@ export default function IndividualMatch() {
         </CardHeader>
 
         <CardContent className="space-y-6">
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={(e) => { handleSubmit(e); }} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               <div className="space-y-2">
                 <Label htmlFor="student_id">Student ID</Label>
@@ -160,7 +160,7 @@ export default function IndividualMatch() {
 
               <div className="space-y-2">
                 <Label htmlFor="gender">Gender</Label>
-                <Select name="gender" value={formData.gender} onValueChange={(value) => setFormData({...formData, gender: value})}>
+                <Select name="gender" value={formData.gender} onValueChange={(value) => { setFormData({...formData, gender: value}); }}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select gender" />
                   </SelectTrigger>
@@ -173,7 +173,7 @@ export default function IndividualMatch() {
               
               <div className="space-y-2">
                 <Label htmlFor="grade">Application Grade</Label>
-                <Select name="grade" value={formData.grade} onValueChange={(value) => setFormData({...formData, grade: value})}>
+                <Select name="grade" value={formData.grade} onValueChange={(value) => { setFormData({...formData, grade: value}); }}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select grade" />
                   </SelectTrigger>
@@ -188,7 +188,7 @@ export default function IndividualMatch() {
               
               <div className="space-y-2">
                 <Label htmlFor="residential_status">Residential Status</Label>
-                <Select name="residential_status" value={formData.residential_status} onValueChange={(value) => setFormData({...formData, residential_status: value})}>
+                <Select name="residential_status" value={formData.residential_status} onValueChange={(value) => { setFormData({...formData, residential_status: value}); }}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select status" />
                   </SelectTrigger>
