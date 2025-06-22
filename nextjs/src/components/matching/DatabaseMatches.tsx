@@ -509,27 +509,6 @@ export default function DatabaseMatches() {
           </div>
         ) : (
           <div className="space-y-4">
-            {/* Match All Button */}
-            <div className="flex justify-end">
-              <Button
-                onClick={handleMatchAll}
-                disabled={isMatchingAll || filteredStudents.length === 0}
-                className="flex items-center gap-2"
-              >
-                {isMatchingAll ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Matching All...
-                  </>
-                ) : (
-                  <>
-                    <UserCheck className="h-4 w-4" />
-                    Match All ({filteredStudents.length})
-                  </>
-                )}
-              </Button>
-            </div>
-
             {/* Students Table */}
             <div className="border rounded-lg">
               <Table>
@@ -693,6 +672,27 @@ export default function DatabaseMatches() {
                   ))}
                 </TableBody>
               </Table>
+            </div>
+            
+            {/* Match All Button - Bottom Right */}
+            <div className="flex justify-end">
+              <Button
+                onClick={handleMatchAll}
+                disabled={isMatchingAll || filteredStudents.length === 0}
+                className="flex items-center gap-2"
+              >
+                {isMatchingAll ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Matching All...
+                  </>
+                ) : (
+                  <>
+                    <UserCheck className="h-4 w-4" />
+                    Match All ({filteredStudents.length})
+                  </>
+                )}
+              </Button>
             </div>
           </div>
         )}
