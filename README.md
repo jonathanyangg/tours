@@ -54,7 +54,7 @@ This project consists of two main components:
   - React 19
   - TypeScript
   - Tailwind CSS
-  - DaisyUI
+  
 
 - **Backend**:
   - FastAPI
