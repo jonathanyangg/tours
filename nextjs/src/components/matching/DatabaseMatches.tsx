@@ -516,7 +516,6 @@ export default function DatabaseMatches() {
                   <TableRow>
                     <TableHead>Student</TableHead>
                     <TableHead>Tour Date</TableHead>
-                    <TableHead>Status</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -541,26 +540,7 @@ export default function DatabaseMatches() {
                             </div>
                           </div>
                         </TableCell>
-                        <TableCell>
-                          {matchStatuses[student.email] === 'success' && (
-                            <Badge variant="default" className="bg-green-100 text-green-800 hover:bg-green-100">
-                              <CheckCircle2 className="h-3 w-3 mr-1" />
-                              Matched
-                            </Badge>
-                          )}
-                          {matchStatuses[student.email] === 'warning' && (
-                            <Badge variant="secondary">
-                              <AlertCircle className="h-3 w-3 mr-1" />
-                              No Matches
-                            </Badge>
-                          )}
-                          {matchStatuses[student.email] === 'error' && (
-                            <Badge variant="destructive">
-                              <AlertCircle className="h-3 w-3 mr-1" />
-                              Error
-                            </Badge>
-                          )}
-                        </TableCell>
+
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-2">
                             <Button
@@ -610,7 +590,7 @@ export default function DatabaseMatches() {
                       {/* Expanded Matches */}
                       {expandedStudents.has(student.email) && (
                         <TableRow>
-                          <TableCell colSpan={4} className="p-0">
+                          <TableCell colSpan={3} className="p-0">
                             <div className="border-t bg-muted/20 p-4">
                               {matchStatuses[student.email] === 'error' ? (
                                 <Alert variant="destructive">

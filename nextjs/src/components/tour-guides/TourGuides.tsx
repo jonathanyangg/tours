@@ -240,7 +240,7 @@ export default function TourGuides() {
                               {student.student_id.charAt(0).toUpperCase()}
                             </AvatarFallback>
                           </Avatar>
-                          <span className="font-medium">{student.student_id}</span>
+                          <span className="text-sm text-muted-foreground">{student.student_id}</span>
                         </div>
                       </TableCell>
                                              <TableCell>
