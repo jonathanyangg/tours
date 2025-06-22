@@ -2,7 +2,21 @@
 
 import { useState } from 'react';
 import { matchTourGuides } from '@/services/api';
-import React from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
+import { 
+  UserSearch, 
+  Loader2,
+  AlertCircle,
+  CheckCircle2,
+  Users,
+  Star
+} from 'lucide-react';
 
 type MatchingFormData = {
   student_id: string;
@@ -110,235 +124,209 @@ export default function IndividualMatch() {
   };
 
   return (
-    <div className="card bg-white shadow-md border border-base-300 mb-8">
-      <div className="p-6">
-        <h2 className="text-xl font-normal text-base-content mb-2">Individual Student Matching</h2>
-        <p className="text-sm text-base-content/70 mb-6">Enter student information manually to find the best tour guide match.</p>
-        
-        <form onSubmit={handleSubmit}>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-6">
-            <div className="form-control">
-              <label className="label mb-2">
-                <span className="label-text text-base-content/80 font-normal">Student ID</span>
-              </label>
-              <input 
-                type="text" 
-                name="student_id"
-                value={formData.student_id}
-                onChange={handleChange}
-                placeholder="Enter student ID" 
-                className="input input-bordered bg-base-100 border-base-300 text-base-content placeholder:text-base-content/50 w-full text-sm" 
-              />
-            </div>
-
-            <div className="form-control">
-              <label className="label mb-2">
-                <span className="label-text text-base-content/80 font-normal">Time Period</span>
-              </label>
-              <select 
-                className="select select-bordered bg-base-100 border-base-300 text-base-content w-full text-sm"
-                name="time_period"
-                value={formData.time_period}
-                onChange={handleChange}
-              >
-                <option value="" disabled>Select time period</option>
-                <option value="Consult">Consult</option>
-                <option value="A">A</option>
-                <option value="B">B</option>
-                <option value="C">C</option>
-                <option value="D">D</option>
-                <option value="E">E</option>
-                <option value="F">F</option>
-              </select>
-            </div>
-            
-            <div className="form-control">
-              <label className="label mb-2">
-                <span className="label-text text-base-content/80 font-normal">Gender</span>
-              </label>
-              <select 
-                className="select select-bordered bg-base-100 border-base-300 text-base-content w-full text-sm"
-                name="gender"
-                value={formData.gender}
-                onChange={handleChange}
-              >
-                <option value="" disabled>Select gender</option>
-                <option value="Male">Male</option>
-                <option value="Female">Female</option>
-              </select>
-            </div>
-            
-            <div className="form-control">
-              <label className="label mb-2">
-                <span className="label-text text-base-content/80 font-normal">Application Grade</span>
-              </label>
-              <select 
-                className="select select-bordered bg-base-100 border-base-300 text-base-content w-full text-sm"
-                name="grade"
-                value={formData.grade}
-                onChange={handleChange}
-              >
-                <option value="" disabled>Select grade</option>
-                <option value="9">Freshman</option>
-                <option value="10">Sophomore</option>
-                <option value="11">Junior</option>
-                <option value="12">Senior/PG</option>
-              </select>
-            </div>
-            
-            <div className="form-control">
-              <label className="label mb-2">
-                <span className="label-text text-base-content/80 font-normal">Residential Status</span>
-              </label>
-              <select 
-                className="select select-bordered bg-base-100 border-base-300 text-base-content w-full text-sm"
-                name="residential_status"
-                value={formData.residential_status}
-                onChange={handleChange}
-              >
-                <option value="" disabled>Select status</option>
-                <option value="Boarding">Boarding</option>
-                <option value="Day Student">Day Student</option>
-              </select>
-            </div>
-            
-            <div className="form-control">
-              <label className="label mb-2">
-                <span className="label-text text-base-content/80 font-normal">City/Country</span>
-              </label>
-              <input 
-                type="text" 
-                placeholder="Enter city/country" 
-                className="input input-bordered bg-base-100 border-base-300 text-base-content placeholder:text-base-content/50 w-full text-sm"
-                name="city_country"
-                value={formData.city_country}
-                onChange={handleChange}
-              />
-            </div>
-            
-            <div className="form-control">
-              <label className="label mb-2">
-                <span className="label-text text-base-content/80 font-normal">Sports</span>
-              </label>
-              <input 
-                type="text" 
-                placeholder="Enter sports" 
-                className="input input-bordered bg-base-100 border-base-300 text-base-content placeholder:text-base-content/50 w-full text-sm"
-                name="sports"
-                value={formData.sports}
-                onChange={handleChange}
-              />
-            </div>
-            
-            <div className="form-control">
-              <label className="label mb-2">
-                <span className="label-text text-base-content/80 font-normal">Extracurricular Activities</span>
-              </label>
-              <input 
-                type="text" 
-                placeholder="Enter extracurricular activities" 
-                className="input input-bordered bg-base-100 border-base-300 text-base-content placeholder:text-base-content/50 w-full max-w-full truncate text-sm"
-                maxLength={50}
-                name="extracurricular_activities"
-                value={formData.extracurricular_activities}
-                onChange={handleChange}
-              />
-            </div>
-            
-            <div className="form-control">
-              <label className="label mb-2">
-                <span className="label-text text-base-content/80 font-normal">Academic Interests</span>
-              </label>
-              <input 
-                type="text" 
-                placeholder="Enter academic interests" 
-                className="input input-bordered bg-base-100 border-base-300 text-base-content placeholder:text-base-content/50 w-full text-sm"
-                name="academic_interests"
-                value={formData.academic_interests}
-                onChange={handleChange}
-              />
-            </div>
-            
-            <div className="form-control">
-              <label className="label mb-2">
-                <span className="label-text text-base-content/80 font-normal">Additional Information</span>
-              </label>
-              <input 
-                type="text" 
-                placeholder="Enter additional information" 
-                className="input input-bordered bg-base-100 border-base-300 text-base-content placeholder:text-base-content/50 w-full text-sm"
-                name="additional_information"
-                value={formData.additional_information}
-                onChange={handleChange}
-              />
-            </div>
-            
-            <div className="form-control">
-              <label className="label mb-2">
-                <span className="label-text text-base-content/80 font-normal">Race</span>
-              </label>
-              <input 
-                type="text" 
-                placeholder="Enter race" 
-                className="input input-bordered bg-base-100 border-base-300 text-base-content placeholder:text-base-content/50 w-full text-sm"
-                name="race"
-                value={formData.race}
-                onChange={handleChange}
-              />
-            </div>
-          </div>
-          
-          <div className="flex justify-end mt-8">
-            <button 
-              type="submit" 
-              className={`btn ${isLoading ? 'loading' : ''} bg-base-100 text-info-content border-info/70 hover:bg-info/70 transition-all duration-200 hover:scale-103`}
-              disabled={isLoading}
-            >
-              {isLoading ? '' : 'Match'}
-            </button>
-          </div>
-        </form>
-
-        {/* Results section */}
-        {status && (
-          <div className={`mt-8 p-4 rounded-lg ${
-            status === 'success' ? 'bg-success/20 border border-success' : 
-            status === 'warning' ? 'bg-warning/20 border border-warning' : 
-            'bg-error/20 border border-error'
-          }`}>
-            <p className={`font-medium ${
-              status === 'success' ? 'text-base-content/80' : 
-              status === 'warning' ? 'text-base-content/80' : 
-              'text-error-content'
-            }`}>
-              {message}
-            </p>
-          </div>
-        )}
-
-        {matches.length > 0 && (
-          <div className="mt-8">
-            <h3 className="text-lg font-medium text-base-content mb-4">Top Matches</h3>
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-              {matches.map((match, index) => (
-                <div key={match.id} className="card bg-base-100 rounded-lg p-5 border border-base-300">
-                  <div className="flex justify-between items-center mb-3">
-                    <span className="text-lg font-medium text-base-content">Match #{index + 1}</span>
-                    <span className="badge badge-success">
-                      Match Score: {formatDistance(match.distance)}
-                    </span>
-                  </div>
-                  <div className="space-y-2">
-                    <p className="text-base-content"><span className="text-base-content/70">Student ID:</span> {match.student_id}</p>
-                    <p className="text-base-content"><span className="text-base-content/70">Gender:</span> {match.gender}</p>
-                    <p className="text-base-content"><span className="text-base-content/70">Grade:</span> {match.grade}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="space-y-2">
+        <h1 className="text-3xl font-bold tracking-tight">Individual Match</h1>
+        <p className="text-muted-foreground">
+          Enter student information to find the best matching tour guides.
+        </p>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <UserSearch className="h-5 w-5" />
+            Student Information
+          </CardTitle>
+          <CardDescription>
+            Fill out the form below to find matching tour guides based on the student's profile.
+          </CardDescription>
+        </CardHeader>
+
+        <CardContent className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="space-y-2">
+                <Label htmlFor="student_id">Student ID</Label>
+                <Input
+                  type="text"
+                  name="student_id"
+                  value={formData.student_id}
+                  onChange={handleChange}
+                  placeholder="Enter student ID"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="gender">Gender</Label>
+                <Select name="gender" value={formData.gender} onValueChange={(value) => setFormData({...formData, gender: value})}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select gender" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Male">Male</SelectItem>
+                    <SelectItem value="Female">Female</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="grade">Application Grade</Label>
+                <Select name="grade" value={formData.grade} onValueChange={(value) => setFormData({...formData, grade: value})}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select grade" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="9">Freshman</SelectItem>
+                    <SelectItem value="10">Sophomore</SelectItem>
+                    <SelectItem value="11">Junior</SelectItem>
+                    <SelectItem value="12">Senior/PG</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="residential_status">Residential Status</Label>
+                <Select name="residential_status" value={formData.residential_status} onValueChange={(value) => setFormData({...formData, residential_status: value})}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Boarding">Boarding</SelectItem>
+                    <SelectItem value="Day Student">Day Student</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="city_country">City/Country</Label>
+                <Input
+                  type="text"
+                  name="city_country"
+                  value={formData.city_country}
+                  onChange={handleChange}
+                  placeholder="Enter city/country"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="sports">Sports</Label>
+                <Input
+                  type="text"
+                  name="sports"
+                  value={formData.sports}
+                  onChange={handleChange}
+                  placeholder="Enter sports"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="extracurricular_activities">Extracurricular Activities</Label>
+                <Input
+                  type="text"
+                  name="extracurricular_activities"
+                  value={formData.extracurricular_activities}
+                  onChange={handleChange}
+                  placeholder="Enter extracurricular activities"
+                  maxLength={50}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="academic_interests">Academic Interests</Label>
+                <Input
+                  type="text"
+                  name="academic_interests"
+                  value={formData.academic_interests}
+                  onChange={handleChange}
+                  placeholder="Enter academic interests"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="additional_information">Additional Information</Label>
+                <Input
+                  type="text"
+                  name="additional_information"
+                  value={formData.additional_information}
+                  onChange={handleChange}
+                  placeholder="Enter additional information"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="race">Race</Label>
+                <Input
+                  type="text"
+                  name="race"
+                  value={formData.race}
+                  onChange={handleChange}
+                  placeholder="Enter race"
+                />
+              </div>
+            </div>
+            
+            <div className="flex justify-end">
+              <Button type="submit" disabled={isLoading} className="flex items-center gap-2">
+                {isLoading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Matching...
+                  </>
+                ) : (
+                  <>
+                    <Users className="h-4 w-4" />
+                    Find Matches
+                  </>
+                )}
+              </Button>
+            </div>
+          </form>
+
+          {/* Results section */}
+          {status && (
+            <Alert variant={status === 'success' ? 'default' : status === 'warning' ? 'default' : 'destructive'}>
+              {status === 'success' ? (
+                <CheckCircle2 className="h-4 w-4" />
+              ) : status === 'warning' ? (
+                <AlertCircle className="h-4 w-4" />
+              ) : (
+                <AlertCircle className="h-4 w-4" />
+              )}
+              <AlertDescription>{message}</AlertDescription>
+            </Alert>
+          )}
+
+          {matches.length > 0 && (
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium flex items-center gap-2">
+                <Star className="h-5 w-5" />
+                Top Matches
+              </h3>
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                {matches.map((match, index) => (
+                  <Card key={match.id}>
+                    <CardContent className="p-4">
+                      <div className="flex justify-between items-center mb-3">
+                        <span className="text-lg font-medium">Match #{index + 1}</span>
+                        <Badge variant="secondary">
+                          Match Score: {formatDistance(match.distance)}
+                        </Badge>
+                      </div>
+                      <div className="space-y-2 text-sm">
+                        <p><span className="text-muted-foreground">Student ID:</span> {match.student_id}</p>
+                        <p><span className="text-muted-foreground">Gender:</span> {match.gender}</p>
+                        <p><span className="text-muted-foreground">Grade:</span> {match.grade}</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 } 
