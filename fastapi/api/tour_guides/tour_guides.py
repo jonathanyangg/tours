@@ -274,10 +274,8 @@ async def get_tour_guides(api_keys=Depends(get_token_then_APIS)):
             # Get the collection
             tour_guide_collection = client.collections.get("TourGuide")
             
-            # Using the newer API with proper method chain
-            query_result = tour_guide_collection.query.fetch_objects(
-                limit=50  # Set limit to 50 records
-            )
+            # Using the newer API with proper method chain - fetch all records (set high limit)
+            query_result = tour_guide_collection.query.fetch_objects(limit=10000)
             
             # Convert the response to a format that can be JSON serialized
             students = []

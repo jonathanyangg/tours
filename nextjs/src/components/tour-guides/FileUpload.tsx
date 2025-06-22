@@ -105,10 +105,10 @@ export default function FileUpload({ onUploadSuccess, onUploadError }: FileUploa
       <div 
         className={`group relative flex flex-col items-center justify-center p-10 border-2 border-dashed rounded-xl transition-all duration-300 ${
           isDragging 
-            ? 'border-accent-content bg-accent-content/5 scale-[1.02] shadow-lg' 
+            ? 'border-primary bg-primary/5 scale-[1.02] shadow-lg' 
             : isUploading 
               ? 'border-primary bg-primary/5 shadow-md' 
-              : 'border-base-300 bg-white hover:border-primary/50 hover:bg-primary/5 hover:shadow-md'
+              : 'border-border bg-background hover:border-primary/50 hover:bg-primary/5 hover:shadow-md'
         }`}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
@@ -142,12 +142,12 @@ export default function FileUpload({ onUploadSuccess, onUploadError }: FileUploa
                     d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                   ></path>
                 </svg>
-                <span className="text-center text-base-content font-medium">
+                <span className="text-center text-foreground font-medium">
                   Uploading {fileName && <span className="text-primary">{fileName}</span>}
                 </span>
               </div>
               
-              <div className="relative w-full h-2 bg-base-200 rounded-full overflow-hidden">
+              <div className="relative w-full h-2 bg-muted rounded-full overflow-hidden">
                 <div 
                   className="absolute inset-0 bg-primary rounded-full transition-all duration-300 ease-out"
                   style={{ width: `${uploadProgress}%`, transform: uploadProgress === 100 ? 'scaleX(1)' : 'scaleX(0.98)' }}
@@ -164,7 +164,7 @@ export default function FileUpload({ onUploadSuccess, onUploadError }: FileUploa
             <>
               <div 
                 className={`mb-4 p-3 rounded-full ${
-                  isDragging ? 'bg-accent-content/10 text-accent-content' : 'bg-primary/10 text-primary group-hover:scale-110'
+                  isDragging ? 'bg-primary/10 text-primary' : 'bg-primary/10 text-primary group-hover:scale-110'
                 } transition-all duration-300`}
               >
                 <svg 
@@ -184,10 +184,10 @@ export default function FileUpload({ onUploadSuccess, onUploadError }: FileUploa
               </div>
               
               <div className="text-center space-y-2">
-                <p className="text-base-content/90 font-medium">
+                <p className="text-foreground font-medium">
                   {isDragging ? 'Drop your file here' : 'Drag & drop your CSV file'}
                 </p>
-                <p className="text-sm text-base-content/60">
+                <p className="text-sm text-muted-foreground">
                   or <span className="text-primary underline">browse files</span>
                 </p>
               </div>
@@ -205,7 +205,7 @@ export default function FileUpload({ onUploadSuccess, onUploadError }: FileUploa
       </div>
       
       {error && (
-        <div className="mt-4 p-4 bg-error/10 border border-error/20 text-error rounded-lg flex items-center animate-fadeIn">
+        <div className="mt-4 p-4 bg-destructive/10 border border-destructive/20 text-destructive rounded-lg flex items-center animate-fadeIn">
           <svg 
             xmlns="http://www.w3.org/2000/svg" 
             className="h-5 w-5 mr-2 flex-shrink-0" 

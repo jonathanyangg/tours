@@ -2,7 +2,18 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import FileUpload from '@/components/FileUpload';
+import FileUpload from '@/components/tour-guides/FileUpload';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Separator } from '@/components/ui/separator';
+import { 
+  Upload, 
+  CheckCircle2, 
+  Download, 
+  Users,
+  Database
+} from 'lucide-react';
 
 export default function UploadData() {
   const [uploadResult, setUploadResult] = useState<any>(null);
@@ -19,44 +30,63 @@ export default function UploadData() {
   };
 
   return (
-    <div className="card bg-white shadow-md border border-base-300">
-      <div className="p-8">
-        <h1 className="text-2xl font-normal text-base-content mb-4">Update Tour Guide Database</h1>
-        <p className="text-base-content mb-8">Upload a CSV file containing tour guide information to populate the database.</p>
-        
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Database className="h-5 w-5" />
+          Update Tour Guide Database
+        </CardTitle>
+        <CardDescription>
+          Upload a CSV file containing tour guide information to populate the database.
+        </CardDescription>
+      </CardHeader>
+
+      <CardContent className="space-y-6">
         <FileUpload 
           onUploadSuccess={handleUploadSuccess}
           onUploadError={handleUploadError}
         />
         
         {uploadResult && (
-          <div className="mt-6 p-4 bg-success/20 text-success rounded-md">
-            <h3 className="font-medium mb-2">Upload Successful!</h3>
-            <p>Your tour guide data has been successfully processed and stored in the database.</p>
-            <pre className="mt-2 p-2 bg-white rounded text-xs overflow-auto">
-              {JSON.stringify(uploadResult, null, 2)}
-            </pre>
-          </div>
+          <Alert className="border-green-200 bg-green-50">
+            <CheckCircle2 className="h-4 w-4 text-green-600" />
+            <AlertDescription>
+              <div className="space-y-2">
+                <div className="font-medium text-green-800">Upload Successful!</div>
+                <p className="text-green-700">
+                  Your tour guide data has been successfully processed and stored in the database.
+                </p>
+                <details className="mt-2">
+                  <summary className="cursor-pointer text-sm text-green-600 hover:text-green-800">
+                    View details
+                  </summary>
+                  <pre className="mt-2 p-3 bg-white border rounded text-xs overflow-auto text-slate-600">
+                    {JSON.stringify(uploadResult, null, 2)}
+                  </pre>
+                </details>
+              </div>
+            </AlertDescription>
+          </Alert>
         )}
+
+        <Separator />
         
-        <div className="flex justify-between items-center mt-6">
-          <div className="text-sm">
-            <a 
-              href="/tour-guides-template.csv" 
-              download
-              className="text-base-content hover:text-base-content font-normal"
-            >
-              Download template
+        <div className="flex justify-between items-center">
+          <Button variant="outline" asChild className="flex items-center gap-2">
+            <a href="/tour-guides-template.csv" download>
+              <Download className="h-4 w-4" />
+              Download Template
             </a>
-          </div>
-          <Link 
-            href="/tour-guides"
-            className="btn bg-base-100 text-info-content border-info/70 hover:bg-info/70"
-          >
-            View Tour Guides
-          </Link>
+          </Button>
+          
+          <Button asChild className="flex items-center gap-2">
+            <Link href="/tour-guides">
+              <Users className="h-4 w-4" />
+              View Tour Guides
+            </Link>
+          </Button>
         </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 } 

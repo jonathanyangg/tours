@@ -3,6 +3,20 @@
 import React, { useState, useEffect } from 'react';
 import { getMatchedStudents, unmatchStudent } from '@/services/api';
 import { toast } from 'react-hot-toast';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { 
+  RefreshCw, 
+  UserCheck, 
+  Loader2,
+  AlertCircle,
+  CheckCircle2,
+  UserX
+} from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface MatchedStudent {
   name: string;
@@ -73,7 +87,6 @@ export default function RecentMatches() {
       const response = await unmatchStudent(email);
       if (response.status === 'success') {
         toast.success('Student unmatched successfully');
-        // Remove the student from the matched list
         setMatchedStudents(prev => prev.filter(student => student.email !== email));
       } else {
         toast.error('Failed to unmatch student');
@@ -87,74 +100,132 @@ export default function RecentMatches() {
   };
 
   return (
-    <div className="card bg-white shadow-md border border-base-300 mb-8">
-      <div className="p-6">
-        <div className="flex justify-between items-center mb-2">
-          <h2 className="text-xl font-normal text-base-content">Recent Matches</h2>
-          <button 
-            className="btn btn-ghost btn-sm hover:bg-base-200 p-2"
+    <Card className="mb-8">
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <div className="space-y-1">
+            <CardTitle className="flex items-center gap-2">
+              <UserCheck className="h-5 w-5" />
+              Recent Matches
+            </CardTitle>
+            <CardDescription>
+              View and manage recently matched students with their assigned tour guides.
+            </CardDescription>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={handleRefresh}
             disabled={refreshing}
-            title="Refresh recent matches"
+            className="h-8 w-8 p-0"
           >
-            {refreshing ? (
-              <span className="loading loading-spinner loading-xs"></span>
-            ) : (
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-base-content/70" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
-            )}
-          </button>
+            <RefreshCw className={cn("h-4 w-4", refreshing && "animate-spin")} />
+          </Button>
         </div>
+      </CardHeader>
+
+      <CardContent>
         {loading ? (
           <div className="flex justify-center items-center h-64">
-            <span className="loading loading-spinner loading-lg text-primary"></span>
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
           </div>
         ) : error ? (
-          <div className="p-4 bg-error/20 text-error-content rounded-md">
-            <p>{error}</p>
-          </div>
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
         ) : matchedStudents.length === 0 ? (
-          <div className="p-4 bg-base-100 text-base-content/70 rounded-md">
-            <p>No matched students found.</p>
+          <div className="text-center py-8 text-muted-foreground">
+            <UserCheck className="h-12 w-12 mx-auto mb-4 opacity-50" />
+            <p>No matched students found</p>
+            <p className="text-sm mt-1">Matched students will appear here once tours are assigned</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="table w-full">
-              <thead>
-                <tr>
-                  <th className="font-medium">Student</th>
-                  <th className="font-medium">Tour Guide</th>
-                  <th className="font-medium">Match Date</th>
-                  <th className="font-medium">Status</th>
-                  <th className="font-medium">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {matchedStudents.map((student, index) => (
-                  <tr key={index} className="hover">
-                    <td>{student.name}</td>
-                    <td>
-                      {student.matched_tour_guide_name || student.matched_tour_guide}
-                    </td>
-                    <td>{new Date(student.tour_datetime).toLocaleString()}</td>
-                    <td>Confirmed</td>
-                    <td>
-                      <button
-                        className="btn bg-base-100 text-error-content border-error/70 hover:bg-error/70"
-                        onClick={() => handleUnmatchStudent(student.email)}
-                        disabled={unmatchingStudent === student.email}
-                      >
-                        {unmatchingStudent === student.email ? 'Moving...' : 'Unmatch'}
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="space-y-4">
+            {/* Summary */}
+            <div className="flex items-center justify-between">
+              <div className="text-sm text-muted-foreground">
+                {matchedStudents.length} matched student{matchedStudents.length !== 1 ? 's' : ''}
+              </div>
+            </div>
+
+            {/* Matches Table */}
+            <div className="border rounded-lg">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Student</TableHead>
+                    <TableHead>Tour Guide</TableHead>
+                    <TableHead>Tour Date</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {matchedStudents.map((student, index) => (
+                    <TableRow key={index} className="group">
+                      <TableCell>
+                        <div className="space-y-1">
+                          <div className="font-medium">{student.name}</div>
+                          <div className="text-sm text-muted-foreground">{student.email}</div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="space-y-1">
+                          <div className="font-medium">
+                            {student.matched_tour_guide_name || 'Tour Guide'}
+                          </div>
+                          <div className="text-sm text-muted-foreground">
+                            ID: {student.matched_tour_guide}
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="text-sm">
+                          {new Date(student.tour_datetime).toLocaleDateString()}
+                          <div className="text-muted-foreground">
+                            {new Date(student.tour_datetime).toLocaleTimeString([], { 
+                              hour: '2-digit', 
+                              minute: '2-digit' 
+                            })}
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="default" className="bg-green-100 text-green-800 hover:bg-green-100">
+                          <CheckCircle2 className="h-3 w-3 mr-1" />
+                          Confirmed
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => handleUnmatchStudent(student.email)}
+                          disabled={unmatchingStudent === student.email}
+                          className="flex items-center gap-2"
+                        >
+                          {unmatchingStudent === student.email ? (
+                            <>
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                              Moving...
+                            </>
+                          ) : (
+                            <>
+                              <UserX className="h-4 w-4" />
+                              Unmatch
+                            </>
+                          )}
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           </div>
         )}
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 } 
