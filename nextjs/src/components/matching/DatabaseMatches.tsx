@@ -514,7 +514,7 @@ export default function DatabaseMatches() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Student</TableHead>
+                    <TableHead>Visiting Student</TableHead>
                     <TableHead>Tour Date</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>

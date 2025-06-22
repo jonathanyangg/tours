@@ -127,7 +127,7 @@ export default function VisitingForm() {
             </AlertDescription>
           </Alert>
         ) : (
-          <form onSubmit={(e) => { handleSubmit(e); }} className="space-y-6">
+          <form onSubmit={(e) => { void handleSubmit(e); }} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               <div className="space-y-2">
                 <Label htmlFor="school">School</Label>
