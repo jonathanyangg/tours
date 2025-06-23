@@ -23,7 +23,7 @@ router = APIRouter()
 # Configuration constants
 EMBEDDING_MODEL = "text-embedding-3-large"
 BATCH_SIZE = 100
-collection_name = "Lawrenceville_visiting_students"
+collection_name = "Visiting_students"
 
 @contextmanager
 def get_weaviate_client(matching_cluster_weaviate_url=None, matching_cluster_weaviate_api_key=None, openai_api_key=None):
@@ -226,8 +226,6 @@ async def create_visiting_student(student: VisitingStudent):
         logger.info(f"Matching cluster weaviate url: {matching_cluster_weaviate_url}")
         logger.info(f"Matching cluster weaviate api key: {matching_cluster_weaviate_api_key}")
         logger.info(f"Openai api key: {openai_api_key}")
-        # Ensure the schema exists
-        create_schema(matching_cluster_weaviate_url, matching_cluster_weaviate_api_key, openai_api_key)
 
         # Create text representation for vector search
         text_fields = []
@@ -254,6 +252,8 @@ async def create_visiting_student(student: VisitingStudent):
         
         with get_weaviate_client(matching_cluster_weaviate_url, matching_cluster_weaviate_api_key, openai_api_key) as client:
             # Get the VisitingStudent collection
+            if collection_name not in client.collections.list_all():
+                create_schema(matching_cluster_weaviate_url, matching_cluster_weaviate_api_key, openai_api_key)
             visiting_student_collection = client.collections.get(collection_name)
             logger.info(f"Retrieved {collection_name} collection")
 

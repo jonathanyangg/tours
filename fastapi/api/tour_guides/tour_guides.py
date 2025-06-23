@@ -22,6 +22,7 @@ router = APIRouter()
 # Configuration constants
 BATCH_SIZE = 100
 EMBEDDING_MODEL = "text-embedding-3-large"
+collection_name = "Tour_guides"
 
 
 @contextmanager
@@ -55,11 +56,11 @@ def create_schema(matching_cluster_weaviate_url=None, matching_cluster_weaviate_
             existing_collections = client.collections.list_all()
             logger.info(f"Existing collections: {existing_collections}")
             
-            # Delete existing Lawrenceville_tour_guides collection if it exists
-            if "Lawrenceville_tour_guides" in existing_collections:
-                logger.info("Lawrenceville_tour_guides collection already exists. Deleting it first...")
-                client.collections.delete("Lawrenceville_tour_guides")
-                logger.info("Successfully deleted existing Lawrenceville_tour_guides collection")
+            # Delete existing tour_guides collection if it exists
+            if collection_name in existing_collections:
+                logger.info(f"{collection_name} collection already exists. Deleting it first...")
+                client.collections.delete(collection_name)
+                logger.info(f"Successfully deleted existing {collection_name} collection")
             
             # Define the schema properties
             properties = [
@@ -111,12 +112,12 @@ def create_schema(matching_cluster_weaviate_url=None, matching_cluster_weaviate_
             
             # Create the collection
             client.collections.create(
-                name="Lawrenceville_tour_guides",
+                name=collection_name,
                 description="A tour guide with their information and vector embedding",
                 properties=properties,
                 vectorizer_config=[vectorizer_config]
             )
-            logger.info("Created Lawrenceville_tour_guides schema in Weaviate")
+            logger.info(f"Created {collection_name} schema in Weaviate")
     except Exception as e:
         logger.error(f"Error creating schema: {e}")
         raise
@@ -151,8 +152,8 @@ def process_and_store_tour_guides(df: pd.DataFrame, matching_cluster_weaviate_ur
         count = 0
         
         with get_weaviate_client(matching_cluster_weaviate_url, matching_cluster_weaviate_api_key, openai_api_key) as client:
-            # Get the Lawrenceville_tour_guides collection
-            tour_guide_collection = client.collections.get("Lawrenceville_tour_guides")
+            # Get the tour_guides collection
+            tour_guide_collection = client.collections.get(collection_name)
             
             # Use batch operations for better performance
             with tour_guide_collection.batch.dynamic() as batch:
@@ -248,8 +249,6 @@ async def upload_tour_guides(file: UploadFile = File(...), api_keys=Depends(get_
 
 
 
-
-
 @router.get("/tour-guides")
 async def get_tour_guides(api_keys=Depends(get_token_then_APIS)):
     """Retrieve tour guide information from Weaviate."""
@@ -260,8 +259,8 @@ async def get_tour_guides(api_keys=Depends(get_token_then_APIS)):
 
     try:
         with get_weaviate_client(matching_cluster_weaviate_url, matching_cluster_weaviate_api_key, openai_api_key) as client:
-            # Check if the Lawrenceville_tour_guides collection exists
-            if "Lawrenceville_tour_guides" not in client.collections.list_all():
+            # Check if the tour_guides collection exists
+            if collection_name not in client.collections.list_all():
                 return {
                     "status": "empty",
                     "message": "No tour guides currently in database",
@@ -269,7 +268,7 @@ async def get_tour_guides(api_keys=Depends(get_token_then_APIS)):
                 }
             
             # Get the collection
-            tour_guide_collection = client.collections.get("Lawrenceville_tour_guides")
+            tour_guide_collection = client.collections.get(collection_name)
             
             # Using the newer API with proper method chain - fetch all records (set high limit)
             query_result = tour_guide_collection.query.fetch_objects(limit=10000)

@@ -76,7 +76,7 @@ def get_token_then_APIS(credentials: HTTPAuthorizationCredentials = Depends(bear
                     status_code=status.HTTP_404_NOT_FOUND,
                     detail="User not associated with any school"
                 )
-            
+            #THIS IS ACTUALLY WRONG, WE HAVE SINCE MOVED EVERYTHING TO 1 CLUSTER AND NOW USE DIFFERENT COLLECTIONS. 
             ceeb_code = user_school_response.data[0]['school_CEEB']
             logger.info(f"CEEB code: {ceeb_code}")
             # Step 2: Use the CEEB code to get the school's API keys

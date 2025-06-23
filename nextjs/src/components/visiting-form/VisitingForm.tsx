@@ -36,7 +36,6 @@ type VisitingStudentForm = {
 };
 
 export default function VisitingForm() {
-  const router = useRouter();
   const [formData, setFormData] = useState<VisitingStudentForm>({
     school: '',
     name: '',
@@ -96,9 +95,6 @@ export default function VisitingForm() {
       }
   
       setSuccess(true);
-      setTimeout(() => {
-        router.push('/');
-      }, 3000);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
@@ -123,7 +119,7 @@ export default function VisitingForm() {
           <Alert className="border-green-200 bg-green-50">
             <CheckCircle2 className="h-4 w-4 text-green-600" />
             <AlertDescription className="text-green-700">
-              Registration successful! Redirecting you to the homepage...
+              Registration successful!
             </AlertDescription>
           </Alert>
         ) : (
