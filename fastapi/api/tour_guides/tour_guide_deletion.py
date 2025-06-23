@@ -3,7 +3,7 @@ import logging
 from contextlib import contextmanager
 import weaviate
 from weaviate.classes.init import Auth
-from ..auth import get_token_then_APIS
+from ..auth import get_token_then_APIS, get_token_then_APIS_cached
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -48,7 +48,7 @@ def delete_tour_guide_schema(tour_guides_weaviate_url=None, tour_guides_weaviate
         raise
 
 @router.delete("/schema")
-async def delete_schema(api_keys=Depends(get_token_then_APIS)):
+async def delete_schema(api_keys=Depends(get_token_then_APIS_cached)):
     """Endpoint to delete the tour guide schema. Use with caution as this will delete all tour guide data."""
     try:
         tour_guides_weaviate_url = api_keys["tour_guides_weaviate_url"]

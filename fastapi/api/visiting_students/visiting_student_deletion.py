@@ -3,7 +3,7 @@ import logging
 from contextlib import contextmanager
 import weaviate
 from weaviate.classes.init import Auth
-from ..auth import get_token_then_APIS
+from ..auth import get_token_then_APIS, get_token_then_APIS_cached
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -48,7 +48,7 @@ def delete_visiting_student_schema(visiting_students_weaviate_url=None, visiting
         raise
 
 @router.delete("/schema")
-async def delete_schema(api_keys=Depends(get_token_then_APIS)):
+async def delete_schema(api_keys=Depends(get_token_then_APIS_cached)):
     """Endpoint to delete the visiting student schema. Use with caution as this will delete all visiting student data."""
     try:
         visiting_students_weaviate_url = api_keys["visiting_students_weaviate_url"]

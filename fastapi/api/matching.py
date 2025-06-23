@@ -8,7 +8,7 @@ from weaviate.classes.query import MetadataQuery
 from contextlib import contextmanager
 from dotenv import load_dotenv
 import os
-from .auth import get_token_then_APIS
+from .auth import get_token_then_APIS, get_token_then_APIS_cached
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -17,6 +17,8 @@ logger = logging.getLogger(__name__)
 load_dotenv()
 
 router = APIRouter()
+tour_guide_collection_name = "Tour_guides"
+visiting_student_collection_name = "Visiting_students"
 
 # Define the matching request models
 class MatchingRequest(BaseModel):
@@ -57,18 +59,18 @@ def get_weaviate_client(weaviate_url, weaviate_api_key, openai_api_key):
 
 
 @router.post("/match-tour-guides-from-database")
-async def match_tour_guides_from_database(request: MatchingRequest, api_keys=Depends(get_token_then_APIS)):
+async def match_tour_guides_from_database(request: MatchingRequest, api_keys=Depends(get_token_then_APIS_cached)):
     """Find the best matching tour guides based on the provided criteria using database data."""
     try:
         logger.info(f"Received matching request: {request}")
         
-        matching_cluster_weaviate_url = api_keys["matching_cluster_weaviate_url"]
-        matching_cluster_weaviate_api_key = api_keys["matching_cluster_weaviate_api_key"]
+        weaviate_url = api_keys["weaviate_url"]
+        weaviate_api_key = api_keys["weaviate_api_key"]
         openai_api_key = api_keys["openai_api_key"]
         
-        with get_weaviate_client(matching_cluster_weaviate_url, matching_cluster_weaviate_api_key, openai_api_key) as client:
+        with get_weaviate_client(weaviate_url, weaviate_api_key, openai_api_key) as client:
             # Get the VisitingStudent collection
-            visiting_student_collection = client.collections.get("Lawrenceville_visiting_students")
+            visiting_student_collection = client.collections.get(visiting_student_collection_name)
             
             # Get the student's data
             student_query = visiting_student_collection.query.fetch_objects(
@@ -103,7 +105,7 @@ async def match_tour_guides_from_database(request: MatchingRequest, api_keys=Dep
             logger.info(f"Generated text representation: {text_representation}")
             
             # Get the TourGuide collection
-            tour_guide_collection = client.collections.get("Lawrenceville_tour_guides")
+            tour_guide_collection = client.collections.get(tour_guide_collection_name)
             
             # Build the filter conditions
             gender_first_char = student.properties.get("gender", "")[0].lower() if student.properties.get("gender") else ""
@@ -160,7 +162,7 @@ async def match_tour_guides_from_database(request: MatchingRequest, api_keys=Dep
 
 
 @router.post("/match-tour-guides-manual")
-def match_tour_guides_manual(request: MatchingRequest, api_keys=Depends(get_token_then_APIS)):
+def match_tour_guides_manual(request: MatchingRequest, api_keys=Depends(get_token_then_APIS_cached)):
     """Find the best matching tour guides based on the provided criteria."""
     try:
         logger.info(f"Received matching request: {request}")
@@ -183,13 +185,13 @@ def match_tour_guides_manual(request: MatchingRequest, api_keys=Depends(get_toke
         text_representation = ", ".join(text_fields)
         logger.info(f"Generated text representation: {text_representation}")
         
-        matching_cluster_weaviate_url = api_keys["matching_cluster_weaviate_url"]
-        matching_cluster_weaviate_api_key = api_keys["matching_cluster_weaviate_api_key"]
+        weaviate_url = api_keys["weaviate_url"]
+        weaviate_api_key = api_keys["weaviate_api_key"]
         openai_api_key = api_keys["openai_api_key"]
         
-        with get_weaviate_client(matching_cluster_weaviate_url, matching_cluster_weaviate_api_key, openai_api_key) as client:  
+        with get_weaviate_client(weaviate_url, weaviate_api_key, openai_api_key) as client:  
             # Get the TourGuide collection
-            tour_guide_collection = client.collections.get("Lawrenceville_tour_guides")
+            tour_guide_collection = client.collections.get(tour_guide_collection_name)
             
             # First filter by gender and grade
             gender_first_char = request.gender[0].lower() if request.gender else ""
