@@ -1,6 +1,7 @@
 'use client'
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { ChevronDownIcon } from "lucide-react";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,12 +10,24 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { 
   CheckCircle2, 
   UserPlus, 
   Loader2,
   GraduationCap,
-  AlertCircle
+  AlertCircle,
+  Calendar as CalendarIcon,
+  Clock,
+  User,
+  MapPin,
+  BookOpen,
+  Trophy
 } from 'lucide-react';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
@@ -36,7 +49,6 @@ type VisitingStudentForm = {
 };
 
 export default function VisitingForm() {
-  const router = useRouter();
   const [formData, setFormData] = useState<VisitingStudentForm>({
     school: '',
     name: '',
@@ -56,6 +68,9 @@ export default function VisitingForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [dateOpen, setDateOpen] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+  const [selectedTime, setSelectedTime] = useState<string>('');
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -63,6 +78,33 @@ export default function VisitingForm() {
       ...prev,
       [name]: value
     }));
+  };
+
+  const handleDateTimeChange = (date: Date | undefined, time: string) => {
+    if (date && time) {
+      const [hours, minutes] = time.split(':');
+      const dateTime = new Date(date);
+      dateTime.setHours(parseInt(hours), parseInt(minutes));
+      
+      setFormData(prev => ({
+        ...prev,
+        tour_datetime: dateTime.toISOString().slice(0, 16)
+      }));
+    }
+  };
+
+  const handleDateChange = (date: Date | undefined) => {
+    setSelectedDate(date);
+    if (date && selectedTime) {
+      handleDateTimeChange(date, selectedTime);
+    }
+  };
+
+  const handleTimeChange = (time: string) => {
+    setSelectedTime(time);
+    if (selectedDate && time) {
+      handleDateTimeChange(selectedDate, time);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -96,9 +138,6 @@ export default function VisitingForm() {
       }
   
       setSuccess(true);
-      setTimeout(() => {
-        router.push('/');
-      }, 3000);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
@@ -107,213 +146,307 @@ export default function VisitingForm() {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <UserPlus className="h-5 w-5" />
-          Visiting Student Registration
-        </CardTitle>
-        <CardDescription>
-          Please fill out this form to register for a campus tour. We'll match you with the perfect tour guide based on your interests and background.
-        </CardDescription>
-      </CardHeader>
+    <div className="max-w-4xl mx-auto p-6">
+      <Card className="shadow-lg">
+        <CardHeader className="text-center pb-8">
+          <CardTitle className="flex items-center justify-center gap-3 text-2xl font-bold">
+            <GraduationCap className="h-7 w-7 text-primary" />
+            AI Campus Tour Matching
+          </CardTitle>
+          <CardDescription className="text-base mt-2 max-w-2xl mx-auto">
+            Tell us more about yourself! We'll use our AI algorithm to match you with a tour guide who shares your interests and background.
+          </CardDescription>
+        </CardHeader>
 
-      <CardContent className="space-y-6">
-        {success ? (
-          <Alert className="border-green-200 bg-green-50">
-            <CheckCircle2 className="h-4 w-4 text-green-600" />
-            <AlertDescription className="text-green-700">
-              Registration successful! Redirecting you to the homepage...
-            </AlertDescription>
-          </Alert>
-        ) : (
-          <form onSubmit={(e) => { void handleSubmit(e); }} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              <div className="space-y-2">
-                <Label htmlFor="school">School</Label>
-                <Select name="school" value={formData.school} onValueChange={(value) => { setFormData({...formData, school: value}); }} required>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select School" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="310680">Lawrenceville</SelectItem>
-                    <SelectItem value="311265">PDS</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="tour_datetime">Tour Date & Time</Label>
-                <Input
-                  type="datetime-local"
-                  name="tour_datetime"
-                  value={formData.tour_datetime}
-                  onChange={handleChange}
-                  required
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="name">Full Name</Label>
-                <Input
-                  type="text"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleChange}
-                  placeholder="Enter your full name"
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  placeholder="Enter your email address"
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="gender">Gender</Label>
-                <Select name="gender" value={formData.gender} onValueChange={(value) => { setFormData({...formData, gender: value}); }} required>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select gender" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Male">Male</SelectItem>
-                    <SelectItem value="Female">Female</SelectItem>
-                    <SelectItem value="Other">Other</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="grade">Grade</Label>
-                <Select name="grade" value={formData.grade} onValueChange={(value) => { setFormData({...formData, grade: value}); }} required>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select grade" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="9">Freshman</SelectItem>
-                    <SelectItem value="10">Sophomore</SelectItem>
-                    <SelectItem value="11">Junior</SelectItem>
-                    <SelectItem value="12">Senior</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="residential_status">Residential Status</Label>
-                <Select name="residential_status" value={formData.residential_status} onValueChange={(value) => { setFormData({...formData, residential_status: value}); }} required>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Boarding">Boarding</SelectItem>
-                    <SelectItem value="Day Student">Day Student</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="city_country">City/Country</Label>
-                <Input
-                  type="text"
-                  name="city_country"
-                  value={formData.city_country}
-                  onChange={handleChange}
-                  placeholder="e.g., New York, USA"
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="sports">Sports Interests</Label>
-                <Input
-                  type="text"
-                  name="sports"
-                  value={formData.sports}
-                  onChange={handleChange}
-                  placeholder="e.g., Soccer, Basketball, Swimming"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="extracurricular_activities">Extracurricular Activities</Label>
-                <Input
-                  type="text"
-                  name="extracurricular_activities"
-                  value={formData.extracurricular_activities}
-                  onChange={handleChange}
-                  placeholder="e.g., Debate Club, Student Government"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="academic_interests">Academic Interests</Label>
-                <Input
-                  type="text"
-                  name="academic_interests"
-                  value={formData.academic_interests}
-                  onChange={handleChange}
-                  placeholder="e.g., Computer Science, Biology"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="race">Race/Ethnicity</Label>
-                <Input
-                  type="text"
-                  name="race"
-                  value={formData.race}
-                  onChange={handleChange}
-                  placeholder="Optional"
-                />
-              </div>
-
-              <div className="space-y-2 md:col-span-2 lg:col-span-3">
-                <Label htmlFor="additional_information">Additional Information</Label>
-                <Input
-                  type="text"
-                  name="additional_information"
-                  value={formData.additional_information}
-                  onChange={handleChange}
-                  placeholder="Anything else you'd like us to know?"
-                />
-              </div>
-            </div>
-
-            {error && (
-              <Alert variant="destructive">
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>{error}</AlertDescription>
+        <CardContent>
+          {success ? (
+            <div className="text-center py-12">
+              <Alert className="border-green-200 bg-green-50 max-w-md mx-auto">
+                <CheckCircle2 className="h-5 w-5 text-green-600" />
+                <AlertDescription className="text-green-700 font-medium">
+                  Registration successful! We'll be in touch soon with tour details.
+                </AlertDescription>
               </Alert>
-            )}
-
-            <Separator />
-
-            <div className="flex justify-end">
-              <Button type="submit" disabled={isSubmitting} className="flex items-center gap-2">
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Submitting...
-                  </>
-                ) : (
-                  <>
-                    <GraduationCap className="h-4 w-4" />
-                    Register for Tour
-                  </>
-                )}
-              </Button>
             </div>
-          </form>
-        )}
-      </CardContent>
-    </Card>
+          ) : (
+            <form onSubmit={(e) => { void handleSubmit(e); }} className="space-y-8">
+              {/* Basic Information Section */}
+              <div className="space-y-6">
+                <div className="flex items-center gap-2 pb-2">
+                  <User className="h-5 w-5 text-primary" />
+                  <h3 className="text-lg font-semibold">Basic Information</h3>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="school" className="text-sm font-medium">School *</Label>
+                    <Select name="school" value={formData.school} onValueChange={(value) => { setFormData({...formData, school: value}); }} required>
+                      <SelectTrigger className="h-11">
+                        <SelectValue placeholder="Select your school" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="310680">The Lawrenceville School</SelectItem>
+                        <SelectItem value="311265">Princeton Day School</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="name" className="text-sm font-medium">Full Name *</Label>
+                    <Input
+                      type="text"
+                      name="name"
+                      value={formData.name}
+                      onChange={handleChange}
+                      placeholder="Enter your full name"
+                      className="h-11"
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="email" className="text-sm font-medium">Email Address *</Label>
+                    <Input
+                      type="email"
+                      name="email"
+                      value={formData.email}
+                      onChange={handleChange}
+                      placeholder="your.email@example.com"
+                      className="h-11"
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="gender" className="text-sm font-medium">Gender *</Label>
+                    <Select name="gender" value={formData.gender} onValueChange={(value) => { setFormData({...formData, gender: value}); }} required>
+                      <SelectTrigger className="h-11">
+                        <SelectValue placeholder="Select gender" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Male">Male</SelectItem>
+                        <SelectItem value="Female">Female</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Tour Details Section */}
+              <div className="space-y-6">
+                <div className="flex items-center gap-2 pb-2">
+                  <CalendarIcon className="h-5 w-5 text-primary" />
+                  <h3 className="text-lg font-semibold">Tour Details</h3>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="flex gap-4 md:col-span-2">
+                    <div className="flex flex-col gap-3 flex-1">
+                      <Label htmlFor="date-picker" className="text-sm font-medium">
+                        Tour Date *
+                      </Label>
+                      <Popover open={dateOpen} onOpenChange={setDateOpen}>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            id="date-picker"
+                            className="h-11 justify-between font-normal"
+                          >
+                            {selectedDate ? selectedDate.toLocaleDateString() : "Select date"}
+                            <ChevronDownIcon className="h-4 w-4" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto overflow-hidden p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={selectedDate}
+                            captionLayout="dropdown"
+                            onSelect={(date) => {
+                              handleDateChange(date);
+                              setDateOpen(false);
+                            }}
+                            disabled={(date) => date < new Date()}
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                    <div className="flex flex-col gap-3 flex-1">
+                      <Label htmlFor="time-picker" className="text-sm font-medium">
+                        Tour Time *
+                      </Label>
+                      <Input
+                        type="time"
+                        id="time-picker"
+                        value={selectedTime}
+                        onChange={(e) => handleTimeChange(e.target.value)}
+                        className="h-11 bg-background appearance-none [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:appearance-none"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="grade" className="text-sm font-medium">Incoming Grade *</Label>
+                    <Select name="grade" value={formData.grade} onValueChange={(value) => { setFormData({...formData, grade: value}); }} required>
+                      <SelectTrigger className="h-11">
+                        <SelectValue placeholder="Select grade" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="9">9th Grade (Freshman)</SelectItem>
+                        <SelectItem value="10">10th Grade (Sophomore)</SelectItem>
+                        <SelectItem value="11">11th Grade (Junior)</SelectItem>
+                        <SelectItem value="12">12th Grade (Senior)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Personal Details Section */}
+              <div className="space-y-6">
+                <div className="flex items-center gap-2 pb-2">
+                  <MapPin className="h-5 w-5 text-primary" />
+                  <h3 className="text-lg font-semibold">Personal Details</h3>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="residential_status" className="text-sm font-medium">Residential Status *</Label>
+                    <Select name="residential_status" value={formData.residential_status} onValueChange={(value) => { setFormData({...formData, residential_status: value}); }} required>
+                      <SelectTrigger className="h-11">
+                        <SelectValue placeholder="Select status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Boarding">Boarding Student</SelectItem>
+                        <SelectItem value="Day Student">Day Student</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="city_country" className="text-sm font-medium">Hometown *</Label>
+                    <Input
+                      type="text"
+                      name="city_country"
+                      value={formData.city_country}
+                      onChange={handleChange}
+                      placeholder="e.g., New York, USA"
+                      className="h-11"
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="race" className="text-sm font-medium">Race/Ethnicity</Label>
+                    <Input
+                      type="text"
+                      name="race"
+                      value={formData.race}
+                      onChange={handleChange}
+                      placeholder="Optional"
+                      className="h-11"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Interests Section */}
+              <div className="space-y-6">
+                <div className="flex items-center gap-2 pb-2">
+                  <Trophy className="h-5 w-5 text-primary" />
+                  <h3 className="text-lg font-semibold">Interests & Activities</h3>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="sports" className="text-sm font-medium">Sports Interests</Label>
+                    <Input
+                      type="text"
+                      name="sports"
+                      value={formData.sports}
+                      onChange={handleChange}
+                      placeholder="e.g., Soccer, Basketball, Swimming"
+                      className="h-11"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="academic_interests" className="text-sm font-medium">Academic Interests</Label>
+                    <Input
+                      type="text"
+                      name="academic_interests"
+                      value={formData.academic_interests}
+                      onChange={handleChange}
+                      placeholder="e.g., Computer Science, Biology, Literature"
+                      className="h-11"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="extracurricular_activities" className="text-sm font-medium">Extracurricular Activities</Label>
+                    <Input
+                      type="text"
+                      name="extracurricular_activities"
+                      value={formData.extracurricular_activities}
+                      onChange={handleChange}
+                      placeholder="e.g., Spikeball Club, Debate Club, etc"
+                      className="h-11"
+                    />
+                  </div>
+
+                  
+
+                  <div className="space-y-2">
+                    <Label htmlFor="additional_information" className="text-sm font-medium">Additional Information</Label>
+                    <Input
+                      type="text"
+                      name="additional_information"
+                      value={formData.additional_information}
+                      onChange={handleChange}
+                      placeholder="Anything else? (Optional)"
+                      className="h-11"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {error && (
+                <Alert variant="destructive" className="mt-6">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
+
+              <div className="flex justify-center pt-6">
+                <Button 
+                  type="submit" 
+                  disabled={isSubmitting} 
+                  className="h-12 px-8 text-base font-medium min-w-[200px]"
+                  size="lg"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="h-5 w-5 animate-spin mr-2" />
+                      Submitting...
+                    </>
+                  ) : (
+                    <>
+                      <UserPlus className="h-5 w-5 mr-2" />
+                      Register for Tour
+                    </>
+                  )}
+                </Button>
+              </div>
+            </form>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 } 
