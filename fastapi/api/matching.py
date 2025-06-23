@@ -102,59 +102,57 @@ async def match_tour_guides_from_database(request: MatchingRequest, api_keys=Dep
             text_representation = ", ".join(text_fields)
             logger.info(f"Generated text representation: {text_representation}")
             
-            # Get tour guides client for matching
-            with get_weaviate_client(matching_cluster_weaviate_url, matching_cluster_weaviate_api_key, openai_api_key) as tour_guides_client:
-                # Get the TourGuide collection
-                tour_guide_collection = tour_guides_client.collections.get("Lawrenceville_tour_guides")
-                
-                # Build the filter conditions
-                gender_first_char = student.properties.get("gender", "")[0].lower() if student.properties.get("gender") else ""
-                grade = student.properties.get("grade", "")
-                
-                gender_filter = Filter.by_property("gender").like(f"{gender_first_char}*")
-                grade_filter = Filter.by_property("grade").equal(grade)
-                
-                # Combine filters
-                combined_filter = gender_filter & grade_filter
-                
-                # Add residential status filter if provided
-                if student.properties.get("residential_status"):
-                    residential_filter = Filter.by_property("residential_status").like(f"{student.properties['residential_status'][0].lower()}*")
-                    combined_filter = combined_filter & residential_filter
-                
-                # Perform vector search with filters
-                response = tour_guide_collection.query.near_text(
-                    query=text_representation,
-                    limit=3,
-                    filters=combined_filter,
-                    return_metadata=MetadataQuery(distance=True)
-                )
-                
-                # Process the results
-                matches = []
-                if response and hasattr(response, 'objects'):
-                    for obj in response.objects:
-                        matches.append({
-                            "student_id": obj.properties.get("student_id", ""),
-                            "gender": obj.properties.get("gender", ""),
-                            "grade": obj.properties.get("grade", ""),
-                            "residential_status": obj.properties.get("residential_status", ""),
-                            "distance": obj.metadata.distance if hasattr(obj.metadata, 'distance') else None,
-                            "id": obj.uuid
-                        })
-                
-                if matches:
-                    return {
-                        "status": "success",
-                        "message": f"Found {len(matches)} matching tour guides",
-                        "matches": matches
-                    }
-                else:
-                    return {
-                        "status": "warning",
-                        "message": "No matching tour guides found with the same gender and grade",
-                        "matches": []
-                    }
+            # Get the TourGuide collection
+            tour_guide_collection = client.collections.get("Lawrenceville_tour_guides")
+            
+            # Build the filter conditions
+            gender_first_char = student.properties.get("gender", "")[0].lower() if student.properties.get("gender") else ""
+            grade = student.properties.get("grade", "")
+            
+            gender_filter = Filter.by_property("gender").like(f"{gender_first_char}*")
+            grade_filter = Filter.by_property("grade").equal(grade)
+            
+            # Combine filters
+            combined_filter = gender_filter & grade_filter
+            
+            # Add residential status filter if provided
+            if student.properties.get("residential_status"):
+                residential_filter = Filter.by_property("residential_status").like(f"{student.properties['residential_status'][0].lower()}*")
+                combined_filter = combined_filter & residential_filter
+            
+            # Perform vector search with filters
+            response = tour_guide_collection.query.near_text(
+                query=text_representation,
+                limit=3,
+                filters=combined_filter,
+                return_metadata=MetadataQuery(distance=True)
+            )
+            
+            # Process the results
+            matches = []
+            if response and hasattr(response, 'objects'):
+                for obj in response.objects:
+                    matches.append({
+                        "student_id": obj.properties.get("student_id", ""),
+                        "gender": obj.properties.get("gender", ""),
+                        "grade": obj.properties.get("grade", ""),
+                        "residential_status": obj.properties.get("residential_status", ""),
+                        "distance": obj.metadata.distance if hasattr(obj.metadata, 'distance') else None,
+                        "id": obj.uuid
+                    })
+            
+            if matches:
+                return {
+                    "status": "success",
+                    "message": f"Found {len(matches)} matching tour guides",
+                    "matches": matches
+                }
+            else:
+                return {
+                    "status": "warning",
+                    "message": "No matching tour guides found with the same gender and grade",
+                    "matches": []
+                }
                     
     except Exception as e:
         logger.error(f"Error matching tour guides: {e}")
