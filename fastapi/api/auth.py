@@ -40,10 +40,8 @@ def get_school_api_keys(ceeb_code):
     try:
         with get_admin_supabase_client() as supabase:
             response = supabase.table('school_api_keys').select(
-                'tour_guides_weaviate_url',
-                'tour_guides_weaviate_api_key',
-                'visiting_students_weaviate_url',
-                'visiting_students_weaviate_api_key',
+                'matching_cluster_weaviate_url',
+                'matching_cluster_weaviate_api_key',
                 'openai_api_key'
             ).eq('CEEB', ceeb_code).execute()
             logger.info(f"HELLO")
@@ -83,10 +81,8 @@ def get_token_then_APIS(credentials: HTTPAuthorizationCredentials = Depends(bear
             logger.info(f"CEEB code: {ceeb_code}")
             # Step 2: Use the CEEB code to get the school's API keys
             school_api_keys_response = supabase.table('school_api_keys').select(
-                'tour_guides_weaviate_url', 
-                'tour_guides_weaviate_api_key', 
-                'visiting_students_weaviate_url', 
-                'visiting_students_weaviate_api_key', 
+                'matching_cluster_weaviate_url', 
+                'matching_cluster_weaviate_api_key', 
                 'openai_api_key'
             ).eq('CEEB', ceeb_code).execute()
             logger.info(f"School API keys response: {school_api_keys_response}")

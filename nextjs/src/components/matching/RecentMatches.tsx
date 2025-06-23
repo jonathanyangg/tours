@@ -154,7 +154,7 @@ export default function RecentMatches() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Student</TableHead>
+                    <TableHead>Visiting Student</TableHead>
                     <TableHead>Tour Guide</TableHead>
                     <TableHead>Tour Date</TableHead>
                     <TableHead>Status</TableHead>

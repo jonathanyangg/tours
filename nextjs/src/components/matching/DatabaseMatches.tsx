@@ -505,7 +505,7 @@ export default function DatabaseMatches() {
         ) : filteredStudents.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
             <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <p>No pending matches found</p>
+            <p>No pending visiting students to match</p>
           </div>
         ) : (
           <div className="space-y-4">

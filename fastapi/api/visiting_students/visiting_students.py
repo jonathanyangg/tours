@@ -23,9 +23,10 @@ router = APIRouter()
 # Configuration constants
 EMBEDDING_MODEL = "text-embedding-3-large"
 BATCH_SIZE = 100
+collection_name = "Lawrenceville_visiting_students"
 
 @contextmanager
-def get_weaviate_client(visiting_students_weaviate_url=None, visiting_students_weaviate_api_key=None, openai_api_key=None):
+def get_weaviate_client(matching_cluster_weaviate_url=None, matching_cluster_weaviate_api_key=None, openai_api_key=None):
     """Context manager for Weaviate client connections."""
     client = None
     headers = {
@@ -33,8 +34,8 @@ def get_weaviate_client(visiting_students_weaviate_url=None, visiting_students_w
     }
     try:
         client = weaviate.connect_to_weaviate_cloud(
-            cluster_url=visiting_students_weaviate_url,
-            auth_credentials=Auth.api_key(visiting_students_weaviate_api_key),
+            cluster_url=matching_cluster_weaviate_url,
+            auth_credentials=Auth.api_key(matching_cluster_weaviate_api_key),
             headers=headers
         )
         logger.info("Successfully connected to Weaviate")
@@ -64,15 +65,15 @@ class VisitingStudent(BaseModel):
     is_matched: Optional[bool] = False
     matched_tour_guide: Optional[str] = None
 
-def create_schema(visiting_students_weaviate_url=None, visiting_students_weaviate_api_key=None, openai_api_key=None):
+def create_schema(matching_cluster_weaviate_url=None, matching_cluster_weaviate_api_key=None, openai_api_key=None):
     """Create the Weaviate schema for visiting students if it doesn't exist."""
     try:
-        with get_weaviate_client(visiting_students_weaviate_url, visiting_students_weaviate_api_key, openai_api_key) as client:
+        with get_weaviate_client(matching_cluster_weaviate_url, matching_cluster_weaviate_api_key, openai_api_key) as client:
             # List existing collections (schemas)
             existing_collections = client.collections.list_all()
             logger.info(f"Existing collections: {existing_collections}")
             
-            if "VisitingStudent" not in existing_collections:
+            if collection_name not in existing_collections:
                 properties = [
                     wvc.config.Property(
                         name="school",
@@ -198,14 +199,14 @@ def create_schema(visiting_students_weaviate_url=None, visiting_students_weaviat
             )
                 
                 client.collections.create(
-                    name="VisitingStudent",
+                    name=collection_name,
                     description="A visiting student with their information and vector embedding",
                     properties=properties,
                     vectorizer_config=[vectorizer_config],
                 )
-                logger.info("Created VisitingStudent schema in Weaviate")
+                logger.info(f"Created {collection_name} schema in Weaviate")
             else:
-                logger.info("VisitingStudent schema already exists")
+                logger.info(f"{collection_name} schema already exists")
     except Exception as e:
         logger.error(f"Error creating schema: {e}")
         raise
@@ -215,20 +216,18 @@ async def create_visiting_student(student: VisitingStudent):
     """Create a new visiting student record and store it in Weaviate."""
     try:
         logger.info(f"Received visiting student data: {json.dumps(student.model_dump(), indent=2)}")
-        # visiting_students_weaviate_url = api_keys["visiting_students_weaviate_url"]
-        # visiting_students_weaviate_api_key = api_keys["visiting_students_weaviate_api_key"]
         school_ceeb = student.school
-        # openai_api_key = api_keys["openai_api_key"]
+       
         api_keys = get_school_api_keys(school_ceeb)
         
-        visiting_students_weaviate_url = api_keys["visiting_students_weaviate_url"]
-        visiting_students_weaviate_api_key = api_keys["visiting_students_weaviate_api_key"]
+        matching_cluster_weaviate_url = api_keys["matching_cluster_weaviate_url"]
+        matching_cluster_weaviate_api_key = api_keys["matching_cluster_weaviate_api_key"]
         openai_api_key = api_keys["openai_api_key"]
-        logger.info(f"Visiting students weaviate url: {visiting_students_weaviate_url}")
-        logger.info(f"Visiting students weaviate api key: {visiting_students_weaviate_api_key}")
+        logger.info(f"Matching cluster weaviate url: {matching_cluster_weaviate_url}")
+        logger.info(f"Matching cluster weaviate api key: {matching_cluster_weaviate_api_key}")
         logger.info(f"Openai api key: {openai_api_key}")
         # Ensure the schema exists
-        create_schema(visiting_students_weaviate_url, visiting_students_weaviate_api_key, openai_api_key)
+        create_schema(matching_cluster_weaviate_url, matching_cluster_weaviate_api_key, openai_api_key)
 
         # Create text representation for vector search
         text_fields = []
@@ -253,10 +252,10 @@ async def create_visiting_student(student: VisitingStudent):
         # Log that vector was generated
         logger.info("Vector property generated successfully")
         
-        with get_weaviate_client(visiting_students_weaviate_url, visiting_students_weaviate_api_key, openai_api_key) as client:
+        with get_weaviate_client(matching_cluster_weaviate_url, matching_cluster_weaviate_api_key, openai_api_key) as client:
             # Get the VisitingStudent collection
-            visiting_student_collection = client.collections.get("VisitingStudent")
-            logger.info("Retrieved VisitingStudent collection")
+            visiting_student_collection = client.collections.get(collection_name)
+            logger.info(f"Retrieved {collection_name} collection")
 
             # Create the student object
             student_data = {
@@ -328,12 +327,12 @@ async def get_visiting_students(api_keys=Depends(get_token_then_APIS)):
     """Retrieve all visiting students from the database."""
     try:
         logger.info("Fetching all visiting students")
-        visiting_students_weaviate_url = api_keys["visiting_students_weaviate_url"]
-        visiting_students_weaviate_api_key = api_keys["visiting_students_weaviate_api_key"]
+        matching_cluster_weaviate_url = api_keys["matching_cluster_weaviate_url"]
+        matching_cluster_weaviate_api_key = api_keys["matching_cluster_weaviate_api_key"]
         openai_api_key = api_keys["openai_api_key"]
         
-        with get_weaviate_client(visiting_students_weaviate_url, visiting_students_weaviate_api_key, openai_api_key) as client:
-            visiting_student_collection = client.collections.get("VisitingStudent")
+        with get_weaviate_client(matching_cluster_weaviate_url, matching_cluster_weaviate_api_key, openai_api_key) as client:
+            visiting_student_collection = client.collections.get(collection_name)
             
             # Query all visiting students
             response = visiting_student_collection.query.fetch_objects(
@@ -367,12 +366,12 @@ async def get_unmatched_students(api_keys=Depends(get_token_then_APIS)):
     """Retrieve all unmatched visiting students from the database."""
     try:
         logger.info("Fetching unmatched visiting students")
-        visiting_students_weaviate_url = api_keys["visiting_students_weaviate_url"]
-        visiting_students_weaviate_api_key = api_keys["visiting_students_weaviate_api_key"]
+        matching_cluster_weaviate_url = api_keys["matching_cluster_weaviate_url"]
+        matching_cluster_weaviate_api_key = api_keys["matching_cluster_weaviate_api_key"]
         openai_api_key = api_keys["openai_api_key"]
         
-        with get_weaviate_client(visiting_students_weaviate_url, visiting_students_weaviate_api_key, openai_api_key) as client:
-            visiting_student_collection = client.collections.get("VisitingStudent")
+        with get_weaviate_client(matching_cluster_weaviate_url, matching_cluster_weaviate_api_key, openai_api_key) as client:
+            visiting_student_collection = client.collections.get(collection_name)
             
             # Query unmatched visiting students
             response = visiting_student_collection.query.fetch_objects(
@@ -407,12 +406,12 @@ async def get_matched_students(api_keys=Depends(get_token_then_APIS)):
     """Retrieve all matched visiting students from the database."""
     try:
         logger.info("Fetching matched visiting students")
-        visiting_students_weaviate_url = api_keys["visiting_students_weaviate_url"]
-        visiting_students_weaviate_api_key = api_keys["visiting_students_weaviate_api_key"]
+        matching_cluster_weaviate_url = api_keys["matching_cluster_weaviate_url"]
+        matching_cluster_weaviate_api_key = api_keys["matching_cluster_weaviate_api_key"]
         openai_api_key = api_keys["openai_api_key"]
         
-        with get_weaviate_client(visiting_students_weaviate_url, visiting_students_weaviate_api_key, openai_api_key) as client:
-            visiting_student_collection = client.collections.get("VisitingStudent")
+        with get_weaviate_client(matching_cluster_weaviate_url, matching_cluster_weaviate_api_key, openai_api_key) as client:
+            visiting_student_collection = client.collections.get(collection_name)
             
             # Query matched visiting students
             response = visiting_student_collection.query.fetch_objects(
@@ -447,12 +446,12 @@ async def update_student_match(student_email: str, tour_guide_id: str, api_keys=
     """Update a visiting student's match status with a tour guide."""
     try:
         logger.info(f"Updating match status for student {student_email} with tour guide {tour_guide_id}")
-        visiting_students_weaviate_url = api_keys["visiting_students_weaviate_url"]
-        visiting_students_weaviate_api_key = api_keys["visiting_students_weaviate_api_key"]
+        matching_cluster_weaviate_url = api_keys["matching_cluster_weaviate_url"]
+        matching_cluster_weaviate_api_key = api_keys["matching_cluster_weaviate_api_key"]
         openai_api_key = api_keys["openai_api_key"]
         
-        with get_weaviate_client(visiting_students_weaviate_url, visiting_students_weaviate_api_key, openai_api_key) as client:
-            visiting_student_collection = client.collections.get("VisitingStudent")
+        with get_weaviate_client(matching_cluster_weaviate_url, matching_cluster_weaviate_api_key, openai_api_key) as client:
+            visiting_student_collection = client.collections.get(collection_name)
             
             # Find the student by email
             student = visiting_student_collection.query.fetch_objects(
@@ -494,12 +493,12 @@ async def unmatch_student(student_email: str, api_keys=Depends(get_token_then_AP
     """Unmatch a visiting student, moving them back to the unmatched list."""
     try:
         logger.info(f"Unmatching student with email: {student_email}")
-        visiting_students_weaviate_url = api_keys["visiting_students_weaviate_url"]
-        visiting_students_weaviate_api_key = api_keys["visiting_students_weaviate_api_key"]
+        matching_cluster_weaviate_url = api_keys["matching_cluster_weaviate_url"]
+        matching_cluster_weaviate_api_key = api_keys["matching_cluster_weaviate_api_key"]
         openai_api_key = api_keys["openai_api_key"]
         
-        with get_weaviate_client(visiting_students_weaviate_url, visiting_students_weaviate_api_key, openai_api_key) as client:
-            visiting_student_collection = client.collections.get("VisitingStudent")
+        with get_weaviate_client(matching_cluster_weaviate_url, matching_cluster_weaviate_api_key, openai_api_key) as client:
+            visiting_student_collection = client.collections.get(collection_name)
             
             # Find the student by email
             student = visiting_student_collection.query.fetch_objects(
@@ -540,14 +539,14 @@ async def delete_visiting_student(student_email: str, api_keys=Depends(get_token
     """Delete a visiting student from the database."""
     try:
         logger.info(f"Attempting to delete visiting student with email: {student_email}")
-        visiting_students_weaviate_url = api_keys["visiting_students_weaviate_url"]
-        visiting_students_weaviate_api_key = api_keys["visiting_students_weaviate_api_key"]
+        matching_cluster_weaviate_url = api_keys["matching_cluster_weaviate_url"]
+        matching_cluster_weaviate_api_key = api_keys["matching_cluster_weaviate_api_key"]
         openai_api_key = api_keys["openai_api_key"]
         
-        with get_weaviate_client(visiting_students_weaviate_url, visiting_students_weaviate_api_key, openai_api_key) as client:
+        with get_weaviate_client(matching_cluster_weaviate_url, matching_cluster_weaviate_api_key, openai_api_key) as client:
             # Get the VisitingStudent collection
-            visiting_student_collection = client.collections.get("VisitingStudent")
-            logger.info("Successfully retrieved VisitingStudent collection")
+            visiting_student_collection = client.collections.get(collection_name)
+            logger.info(f"Successfully retrieved {collection_name} collection")
             
             # Find the student by email
             student = visiting_student_collection.query.fetch_objects(
