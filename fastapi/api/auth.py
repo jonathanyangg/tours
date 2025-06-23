@@ -165,41 +165,6 @@ def get_school_api_keys(ceeb_code):
     except Exception as e:
         raise ValueError(f"Error getting API keys: {str(e)}")
     
-    
-def get_token_then_APIS(credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme)):
-    """Original authentication function - kept for backward compatibility during rollout."""
-    token = credentials.credentials
-    try:
-        with get_supabase_client() as supabase:
-            # Verify token and get user info
-            response = supabase.auth.get_user(token)
-            if not response:
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Invalid token or user not found"
-                )
-            supabase.auth.set_session(token, "") 
-
-            # Step 1: Get the CEEB code associated with this user
-            user_id = response.user.id
-            api_keys_response = supabase.table('admin_to_school').select(
-                'weaviate_url', 
-                'weaviate_api_key', 
-                'openai_api_key').eq('user_id', user_id).execute()
-            
-            if not api_keys_response.data:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail="No API keys found"
-                )
-            return api_keys_response.data[0]
-
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"Invalid authentication credentials: {str(e)}",
-        )
-
 
 def get_token_then_APIS_cached(credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme)):
     """Cached version of authentication function - improves performance by caching API credentials."""
