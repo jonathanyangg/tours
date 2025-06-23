@@ -151,10 +151,10 @@ export default function VisitingForm() {
         <CardHeader className="text-center pb-8">
           <CardTitle className="flex items-center justify-center gap-3 text-2xl font-bold">
             <GraduationCap className="h-7 w-7 text-primary" />
-            Campus Tour Registration
+            AI Campus Tour Matching
           </CardTitle>
           <CardDescription className="text-base mt-2 max-w-2xl mx-auto">
-            Register for a personalized campus tour experience. We'll match you with a tour guide who shares your interests and background.
+            Tell us more about yourself! We'll use our AI algorithm to match you with a tour guide who shares your interests and background.
           </CardDescription>
         </CardHeader>
 
@@ -226,7 +226,6 @@ export default function VisitingForm() {
                       <SelectContent>
                         <SelectItem value="Male">Male</SelectItem>
                         <SelectItem value="Female">Female</SelectItem>
-                        <SelectItem value="Other">Other</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -246,7 +245,7 @@ export default function VisitingForm() {
                   <div className="flex gap-4 md:col-span-2">
                     <div className="flex flex-col gap-3 flex-1">
                       <Label htmlFor="date-picker" className="text-sm font-medium">
-                        Preferred Date *
+                        Tour Date *
                       </Label>
                       <Popover open={dateOpen} onOpenChange={setDateOpen}>
                         <PopoverTrigger asChild>
@@ -275,7 +274,7 @@ export default function VisitingForm() {
                     </div>
                     <div className="flex flex-col gap-3 flex-1">
                       <Label htmlFor="time-picker" className="text-sm font-medium">
-                        Preferred Time *
+                        Tour Time *
                       </Label>
                       <Input
                         type="time"
@@ -289,7 +288,7 @@ export default function VisitingForm() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="grade" className="text-sm font-medium">Current Grade *</Label>
+                    <Label htmlFor="grade" className="text-sm font-medium">Incoming Grade *</Label>
                     <Select name="grade" value={formData.grade} onValueChange={(value) => { setFormData({...formData, grade: value}); }} required>
                       <SelectTrigger className="h-11">
                         <SelectValue placeholder="Select grade" />
@@ -316,10 +315,10 @@ export default function VisitingForm() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <Label htmlFor="residential_status" className="text-sm font-medium">Residential Preference *</Label>
+                    <Label htmlFor="residential_status" className="text-sm font-medium">Residential Status *</Label>
                     <Select name="residential_status" value={formData.residential_status} onValueChange={(value) => { setFormData({...formData, residential_status: value}); }} required>
                       <SelectTrigger className="h-11">
-                        <SelectValue placeholder="Select preference" />
+                        <SelectValue placeholder="Select status" />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="Boarding">Boarding Student</SelectItem>
@@ -329,7 +328,7 @@ export default function VisitingForm() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="city_country" className="text-sm font-medium">Location *</Label>
+                    <Label htmlFor="city_country" className="text-sm font-medium">Hometown *</Label>
                     <Input
                       type="text"
                       name="city_country"
@@ -378,18 +377,6 @@ export default function VisitingForm() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="extracurricular_activities" className="text-sm font-medium">Extracurricular Activities</Label>
-                    <Input
-                      type="text"
-                      name="extracurricular_activities"
-                      value={formData.extracurricular_activities}
-                      onChange={handleChange}
-                      placeholder="e.g., Debate Club, Student Government"
-                      className="h-11"
-                    />
-                  </div>
-
-                  <div className="space-y-2 md:col-span-2">
                     <Label htmlFor="academic_interests" className="text-sm font-medium">Academic Interests</Label>
                     <Input
                       type="text"
@@ -401,14 +388,28 @@ export default function VisitingForm() {
                     />
                   </div>
 
-                  <div className="space-y-2 md:col-span-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="extracurricular_activities" className="text-sm font-medium">Extracurricular Activities</Label>
+                    <Input
+                      type="text"
+                      name="extracurricular_activities"
+                      value={formData.extracurricular_activities}
+                      onChange={handleChange}
+                      placeholder="e.g., Spikeball Club, Debate Club, etc"
+                      className="h-11"
+                    />
+                  </div>
+
+                  
+
+                  <div className="space-y-2">
                     <Label htmlFor="additional_information" className="text-sm font-medium">Additional Information</Label>
                     <Input
                       type="text"
                       name="additional_information"
                       value={formData.additional_information}
                       onChange={handleChange}
-                      placeholder="Anything else you'd like us to know to help match you with the perfect tour guide?"
+                      placeholder="Anything else? (Optional)"
                       className="h-11"
                     />
                   </div>

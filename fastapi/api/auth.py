@@ -69,31 +69,17 @@ def get_token_then_APIS(credentials: HTTPAuthorizationCredentials = Depends(bear
 
             # Step 1: Get the CEEB code associated with this user
             user_id = response.user.id
-            user_school_response = supabase.table('admin_to_school').select('school_CEEB').eq('user_id', user_id).execute()
-            
-            if not user_school_response.data:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail="User not associated with any school"
-                )
-            #THIS IS ACTUALLY WRONG, WE HAVE SINCE MOVED EVERYTHING TO 1 CLUSTER AND NOW USE DIFFERENT COLLECTIONS. 
-            ceeb_code = user_school_response.data[0]['school_CEEB']
-            logger.info(f"CEEB code: {ceeb_code}")
-            # Step 2: Use the CEEB code to get the school's API keys
-            school_api_keys_response = supabase.table('school_api_keys').select(
+            api_keys_response = supabase.table('admin_to_school').select(
                 'matching_cluster_weaviate_url', 
                 'matching_cluster_weaviate_api_key', 
-                'openai_api_key'
-            ).eq('CEEB', ceeb_code).execute()
-            logger.info(f"School API keys response: {school_api_keys_response}")
+                'openai_api_key').eq('user_id', user_id).execute()
             
-            if not school_api_keys_response.data:
+            if not api_keys_response.data:
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
-                    detail=f"No API keys found"
+                    detail="No API keys found"
                 )
-                
-            return school_api_keys_response.data[0]
+            return api_keys_response.data[0]
 
     except Exception as e:
         raise HTTPException(
