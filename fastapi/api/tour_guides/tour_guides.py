@@ -5,10 +5,7 @@ from typing import Dict
 import io
 import logging
 from dotenv import load_dotenv
-import weaviate
-from weaviate.classes.init import Auth
 import weaviate.classes as wvc
-from contextlib import contextmanager
 from ..auth import get_token_then_APIS_cached
 from ..weaviate_pool import get_weaviate_client
 
@@ -30,7 +27,7 @@ def create_schema(weaviate_url=None, weaviate_api_key=None, openai_api_key=None,
     """Create or update the Weaviate schema for tour guides."""
     try:
         client = get_weaviate_client(weaviate_url, weaviate_api_key, openai_api_key, user_id)
-            # List existing collections (schemas)
+        # List existing collections (schemas)
         existing_collections = client.collections.list_all()
         logger.info(f"Existing collections: {existing_collections}")
         
@@ -109,7 +106,7 @@ def format_dataframe_columns(df: pd.DataFrame, start_pos: int = 3) -> pd.DataFra
     )
     return df
 
-def process_and_store_tour_guides(df: pd.DataFrame, weaviate_url=None, weaviate_api_key=None, openai_api_key=None) -> Dict:
+def process_and_store_tour_guides(df: pd.DataFrame, weaviate_url=None, weaviate_api_key=None, openai_api_key=None, user_id=None) -> Dict:
     """
     Process tour guide data and store it in Weaviate.
     
@@ -120,7 +117,7 @@ def process_and_store_tour_guides(df: pd.DataFrame, weaviate_url=None, weaviate_
     """
     try:
         # Create or verify the schema first
-        create_schema(weaviate_url, weaviate_api_key, openai_api_key)
+        create_schema(weaviate_url, weaviate_api_key, openai_api_key, user_id)
 
         # Format the text representation
         df = format_dataframe_columns(df)
@@ -129,38 +126,38 @@ def process_and_store_tour_guides(df: pd.DataFrame, weaviate_url=None, weaviate_
         logger.info("Inserting tour guide data into Weaviate...")
         count = 0
         
-        with get_weaviate_client(weaviate_url, weaviate_api_key, openai_api_key) as client:
-            # Get the tour_guides collection
-            tour_guide_collection = client.collections.get(collection_name)
-            
-            # Use batch operations for better performance
-            with tour_guide_collection.batch.dynamic() as batch:
-                for idx, row in df.iterrows():
-                    # Get residential_status from the 4th column if it exists
-                    residential_status = str(row.iloc[3]) if len(row) > 3 else ""
-                    
-                    data_object = {
-                        "student_id": str(row.iloc[0]),  # Assumes the first column is a unique identifier
-                        "gender": str(row.iloc[1]),
-                        "grade": str(row.iloc[2]),
-                        "residential_status": residential_status,
-                        "text_representation": row['text_representation']
-                    }
-                    
-                    batch.add_object(
-                        properties=data_object
-                    )
-                    count += 1
-                    
-                    if batch.number_errors > 10:
-                        logger.error("Batch import stopped due to excessive errors.")
-                        break
+        client = get_weaviate_client(weaviate_url, weaviate_api_key, openai_api_key, user_id)
+        # Get the tour_guides collection
+        tour_guide_collection = client.collections.get(collection_name)
+        
+        # Use batch operations for better performance
+        with tour_guide_collection.batch.dynamic() as batch:
+            for idx, row in df.iterrows():
+                # Get residential_status from the 4th column if it exists
+                residential_status = str(row.iloc[3]) if len(row) > 3 else ""
+                
+                data_object = {
+                    "student_id": str(row.iloc[0]),  # Assumes the first column is a unique identifier
+                    "gender": str(row.iloc[1]),
+                    "grade": str(row.iloc[2]),
+                    "residential_status": residential_status,
+                    "text_representation": row['text_representation']
+                }
+                
+                batch.add_object(
+                    properties=data_object
+                )
+                count += 1
+                
+                if batch.number_errors > 10:
+                    logger.error("Batch import stopped due to excessive errors.")
+                    break
 
-            # Check for failed objects
-            failed_objects = tour_guide_collection.batch.failed_objects
-            if failed_objects:
-                logger.error(f"Number of failed imports: {len(failed_objects)}")
-                logger.error(f"First failed object: {failed_objects[0]}")
+        # Check for failed objects
+        failed_objects = tour_guide_collection.batch.failed_objects
+        if failed_objects:
+            logger.error(f"Number of failed imports: {len(failed_objects)}")
+            logger.error(f"First failed object: {failed_objects[0]}")
 
         logger.info(f"Successfully inserted {count} tour guides into Weaviate.")
         return {
@@ -208,7 +205,7 @@ async def upload_tour_guides(file: UploadFile = File(...), api_keys=Depends(get_
         logger.info(f"Processing CSV with {len(df)} rows and {len(df.columns)} columns")
         
         # Process and store the tour guides
-        result = process_and_store_tour_guides(df, weaviate_url, weaviate_api_key, openai_api_key)
+        result = process_and_store_tour_guides(df, weaviate_url, weaviate_api_key, openai_api_key, user_id)
         
         return JSONResponse(
             content=result,
@@ -238,7 +235,6 @@ async def get_tour_guides(api_keys=Depends(get_token_then_APIS_cached)):
     openai_api_key = api_keys["openai_api_key"]
     user_id = api_keys["user_id"]
     
-
     client = get_weaviate_client(weaviate_url, weaviate_api_key, openai_api_key, user_id)
 
     if client is None:
@@ -285,15 +281,16 @@ async def test_weaviate_connection(api_keys=Depends(get_token_then_APIS_cached))
     weaviate_url = api_keys["weaviate_url"]
     weaviate_api_key = api_keys["weaviate_api_key"]
     openai_api_key = api_keys["openai_api_key"]
+    user_id = api_keys["user_id"]
     try:
-        with get_weaviate_client(weaviate_url, weaviate_api_key, openai_api_key) as client:
-            # Try to list collections
-            collections = client.collections.list_all()
-            return {
-                "status": "success",
-                "message": "Successfully connected to Weaviate",
-                "collections": collections
-            }
+        client = get_weaviate_client(weaviate_url, weaviate_api_key, openai_api_key, user_id)
+        # Try to list collections
+        collections = client.collections.list_all()
+        return {
+            "status": "success",
+            "message": "Successfully connected to Weaviate",
+            "collections": collections
+        }
     except Exception as e:
         logger.error(f"Error connecting to Weaviate: {e}")
         raise HTTPException(status_code=500, detail=str(e))
