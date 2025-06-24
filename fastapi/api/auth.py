@@ -105,12 +105,11 @@ def get_school_api_keys(ceeb_code):
     """Get school API keys using service role client to bypass RLS"""
     try:
         with get_admin_supabase_client() as supabase:
-            response = supabase.table('school_api_keys').select(
+            response = supabase.table('admin_to_school').select(
                 'weaviate_url',
                 'weaviate_api_key',
                 'openai_api_key'
-            ).eq('CEEB', ceeb_code).execute()
-            logger.info(f"HELLO")
+            ).eq('school_CEEB', ceeb_code).execute()
             logger.info(f"Response: {response.data}")
             if not response.data:
                 raise ValueError(f"No API keys found for CEEB: {ceeb_code}")
@@ -159,6 +158,9 @@ def get_token_then_APIS_cached(credentials: HTTPAuthorizationCredentials = Depen
                 )
             
             credentials_data = api_keys_response.data[0]
+            
+            # Add user_id to credentials_data
+            credentials_data["user_id"] = user_id
             
             # Step 4: Cache the result
             auth_cache.set(user_id, credentials_data)
