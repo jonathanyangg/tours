@@ -160,6 +160,9 @@ def get_token_then_APIS_cached(credentials: HTTPAuthorizationCredentials = Depen
             
             credentials_data = api_keys_response.data[0]
             
+            # Add user_id to credentials_data
+            credentials_data["user_id"] = user_id
+            
             # Step 4: Cache the result
             auth_cache.set(user_id, credentials_data)
             

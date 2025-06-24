@@ -49,6 +49,9 @@ def get_weaviate_client(weaviate_url=None, weaviate_api_key=None, openai_api_key
             logger.info("Closed Weaviate connection")
 
 def create_schema(weaviate_url=None, weaviate_api_key=None, openai_api_key=None):
+
+
+    
     """Create or update the Weaviate schema for tour guides."""
     try:
         with get_weaviate_client(weaviate_url, weaviate_api_key, openai_api_key) as client:
