@@ -5,6 +5,10 @@ import threading
 import time
 from datetime import datetime, timedelta
 from typing import Dict, Optional
+from fastapi import APIRouter, Depends, HTTPException
+from .auth import get_token_then_APIS_cached
+
+router = APIRouter()
 
 logger = logging.getLogger(__name__)
 
@@ -134,6 +138,28 @@ def get_pool_status():
     """Get current pool status for debugging."""
     return _weaviate_pool.get_pool_status()
 
+@router.get("/health-check-cleanup-thread")
 def health_check_cleanup_thread():
     """Public function to check and restart cleanup thread if needed."""
     return _weaviate_pool.health_check_and_restart()
+
+
+@router.get("/test-weaviate")
+async def test_weaviate_connection(api_keys=Depends(get_token_then_APIS_cached)):
+    """Test the connection to Weaviate using user-specific credentials (with caching)."""
+    weaviate_url = api_keys["weaviate_url"]
+    weaviate_api_key = api_keys["weaviate_api_key"]
+    openai_api_key = api_keys["openai_api_key"]
+    user_id = api_keys["user_id"]
+    try:
+        client = get_weaviate_client(weaviate_url, weaviate_api_key, openai_api_key, user_id)
+        # Try to list collections
+        collections = client.collections.list_all()
+        return {
+            "status": "success",
+            "message": "Successfully connected to Weaviate",
+            "collections": collections
+        }
+    except Exception as e:
+        logger.error(f"Error connecting to Weaviate: {e}")
+        raise HTTPException(status_code=500, detail=str(e)) 
