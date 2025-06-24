@@ -1,12 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { logout } from '@/app/login/actions';
-import { getUserEmail } from '@/services/api';
-import { useEffect, useState } from 'react';
-import { Home, Eye, Upload, LogOut } from 'lucide-react';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Home, Eye, Upload, LogOut, User } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,37 +14,6 @@ import { cn } from '@/lib/utils';
 
 export default function Navbar() {
   const pathname = usePathname();
-  const router = useRouter();
-  const [userInitial, setUserInitial] = useState('');
-  const [isScrolled, setIsScrolled] = useState(false);
-
-  useEffect(() => {
-    const fetchUserEmail = async () => {
-      try {
-        const email = await getUserEmail();
-        setUserInitial(email.charAt(0).toUpperCase());
-      } catch (error) {
-        console.error('Error fetching user email:', error);
-        setUserInitial('?'); // Fallback initial if there's an error
-      }
-    };
-
-    fetchUserEmail();
-
-    // Add scroll event listener
-    const handleScroll = () => {
-      if (window.scrollY > 10) {
-        setIsScrolled(true);
-      } else {
-        setIsScrolled(false);
-      }
-    };
-
-    window.addEventListener('scroll', handleScroll);
-    return () => {
-      window.removeEventListener('scroll', handleScroll);
-    };
-  }, []);
 
   const isActive = (path: string) => {
     return pathname === path;
@@ -60,13 +26,8 @@ export default function Navbar() {
   ];
 
   return (
-    <header className={cn(
-      "sticky top-0 z-50 w-full transition-all duration-300",
-      isScrolled 
-        ? "border-b bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/60" 
-        : "border-b bg-background/95 backdrop-blur-sm"
-    )}>
-      <div className="container mx-auto flex h-16 max-w-screen-2xl items-center justify-between px-4">
+    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <div className="container mx-auto flex h-14 max-w-screen-2xl items-center justify-between px-4">
         {/* Navigation Links */}
         <nav className="flex items-center space-x-1">
           {navItems.map(({ href, label, icon: Icon }) => (
@@ -74,31 +35,26 @@ export default function Navbar() {
               key={href}
               href={href}
               className={cn(
-                "relative flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 hover:bg-accent hover:text-accent-foreground",
+                "relative flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors duration-150 hover:bg-accent hover:text-accent-foreground",
                 isActive(href)
                   ? "bg-accent text-accent-foreground"
-                  : "text-muted-foreground"
+                  : "text-muted-foreground hover:text-foreground"
               )}
             >
               <Icon className="h-4 w-4" />
               <span className="hidden sm:inline-block">{label}</span>
-              {isActive(href) && (
-                <div className="absolute inset-x-0 bottom-0 h-0.5 bg-primary rounded-full" />
-              )}
             </Link>
           ))}
         </nav>
 
-        {/* User Menu */}
+        {/* User Profile Menu */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Avatar className="h-9 w-9 cursor-pointer ring-offset-background transition-all hover:ring-2 hover:ring-ring hover:ring-offset-2">
-              <AvatarFallback className="bg-primary text-primary-foreground font-medium">
-                {userInitial}
-              </AvatarFallback>
-            </Avatar>
+            <button className="flex h-8 w-8 items-center justify-center rounded-full bg-accent hover:bg-accent/80 transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2">
+              <User className="h-4 w-4 text-accent-foreground" />
+            </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-48">
+          <DropdownMenuContent align="end" className="w-40">
             <form action={logout} className="w-full">
               <DropdownMenuItem asChild>
                 <button 
