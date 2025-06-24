@@ -1,7 +1,10 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Request
 import logging
 import json
 from weaviate.collections.classes.filters import Filter
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 from ..auth import get_token_then_APIS_cached, get_school_api_keys
 from ..weaviate_pool import get_weaviate_client
 from .visiting_student_functions import (
@@ -16,11 +19,15 @@ from .visiting_student_functions import (
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Create rate limiter instance
+limiter = Limiter(key_func=get_remote_address)
+
 router = APIRouter()
 
 
 @router.post("/visiting-students/{ceeb_code}")
-async def create_visiting_student(ceeb_code: str, student: VisitingStudent):
+@limiter.limit("10/minute")  # Allow 10 requests per minute per IP
+async def create_visiting_student(request: Request, ceeb_code: str, student: VisitingStudent):
     """Create a new visiting student record and store it in Weaviate."""
     try:
         logger.info(f"Received visiting student data for school {ceeb_code}: {json.dumps(student.model_dump(), indent=2)}")
@@ -386,4 +393,15 @@ async def delete_visiting_student(student_email: str, api_data=Depends(get_token
         }
     except Exception as e:
         logger.error(f"Error deleting student: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) 
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/test-rate-limit")
+@limiter.limit("3/minute")  # Very restrictive for testing
+async def test_rate_limit(request: Request):
+    """Test endpoint to verify rate limiting is working."""
+    return {
+        "status": "success",
+        "message": "Rate limiting is working! You can call this endpoint 3 times per minute.",
+        "timestamp": str(request.state.__dict__.get("timestamp", "N/A"))
+    } 
