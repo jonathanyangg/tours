@@ -6,6 +6,7 @@ import logging
 import threading
 from datetime import datetime, timedelta
 from typing import Optional, Dict
+import jwt
 from .supabase_client import get_supabase_client
 from .supabase_client import get_admin_supabase_client
 
@@ -17,6 +18,8 @@ load_dotenv()
 # Set up the HTTP bearer scheme for token extraction
 bearer_scheme = HTTPBearer()
 
+# Supabase JWT secret for local validation
+JWT_SECRET = os.getenv("SUPABASE_JWT_SECRET")
 
 class AuthCache:
     """Thread-safe cache for API credentials with TTL expiration."""
@@ -67,19 +70,30 @@ auth_cache = AuthCache(default_ttl_minutes=60)
 
 
 async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme)):
-    #CITATION: https://supabase.com/docs/reference/python/auth-getuser
+    """Get current user by validating JWT locally (fast) or via Supabase API (fallback)."""
     token = credentials.credentials
     try:
-        with get_supabase_client() as supabase:
-            # Use Supabase client to verify the token and get user info
-            response = supabase.auth.get_user(token)
-            if not response:
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Invalid token or user not found"
-                )
-            supabase.auth.set_session(token, "") 
-            return response.user
+        # Try local JWT validation first (fast)
+        try:
+            payload = jwt.decode(token, JWT_SECRET, algorithms=["HS256"], audience="authenticated")
+            return {
+                "id": payload["sub"],
+                "email": payload.get("email"),
+                "aud": payload.get("aud"),
+                "exp": payload.get("exp")
+            }
+        except jwt.InvalidTokenError:
+            # Fallback to Supabase API validation if local validation fails
+            logger.info("Local JWT validation failed, falling back to Supabase API")
+            with get_supabase_client() as supabase:
+                response = supabase.auth.get_user(token)
+                if not response:
+                    raise HTTPException(
+                        status_code=status.HTTP_401_UNAUTHORIZED,
+                        detail="Invalid token or user not found"
+                    )
+                supabase.auth.set_session(token, "") 
+                return response.user
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -107,27 +121,31 @@ def get_school_api_keys(ceeb_code):
     
 
 def get_token_then_APIS_cached(credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme)):
-    """Cached version of authentication function - improves performance by caching API credentials."""
+    """Optimized cached authentication - validates JWT locally to avoid expensive API calls."""
     token = credentials.credentials
     try:
+        # Step 1: Validate JWT locally to get user_id (NO API CALL!)
+        try:
+            payload = jwt.decode(token, JWT_SECRET, algorithms=["HS256"], audience="authenticated")
+            user_id = payload["sub"]  # This is the same user_id that Supabase API would return
+        except jwt.ExpiredSignatureError:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Token expired"
+            )
+        except jwt.InvalidTokenError:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid token"
+            )
+        
+        # Step 2: Check cache first
+        cached_credentials = auth_cache.get(user_id)
+        if cached_credentials:
+            return cached_credentials
+        
+        # Step 3: Cache miss - fetch from database
         with get_supabase_client() as supabase:
-            # Step 1: Always verify token (required for security)
-            response = supabase.auth.get_user(token)
-            if not response:
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Invalid token or user not found"
-                )
-            supabase.auth.set_session(token, "") 
-
-            user_id = response.user.id
-            
-            # Step 2: Check cache first
-            cached_credentials = auth_cache.get(user_id)
-            if cached_credentials:
-                return cached_credentials
-            
-            # Step 3: Cache miss - fetch from database
             api_keys_response = supabase.table('admin_to_school').select(
                 'weaviate_url', 
                 'weaviate_api_key', 
@@ -147,6 +165,9 @@ def get_token_then_APIS_cached(credentials: HTTPAuthorizationCredentials = Depen
             
             return credentials_data
 
+    except HTTPException:
+        # Re-raise HTTP exceptions as-is
+        raise
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
