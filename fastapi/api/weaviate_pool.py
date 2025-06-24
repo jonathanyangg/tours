@@ -52,7 +52,7 @@ class WeaviatePool:
         self._lock = threading.RLock()
         self.idle_timeout = timedelta(minutes=idle_timeout_minutes)
 
-    def get_client(self, user_id: str, weaviate_url: str, weaviate_api_key: str, openai_api_key: str):
+    def get_client(self, weaviate_url: str, weaviate_api_key: str, openai_api_key: str, user_id: str):
         """Get a Weaviate client from the pool or create a new one."""
         with self._lock:
             if user_id in self._pool:
@@ -97,8 +97,8 @@ class WeaviatePool:
 # Global pool instance
 _weaviate_pool = WeaviatePool(idle_timeout_minutes=30)
 
-def get_weaviate_client(user_id: str, weaviate_url: str, weaviate_api_key: str, openai_api_key: str):
-    return _weaviate_pool.get_client(user_id, weaviate_url, weaviate_api_key, openai_api_key)
+def get_weaviate_client(weaviate_url: str, weaviate_api_key: str, openai_api_key: str, user_id: str):
+    return _weaviate_pool.get_client(weaviate_url, weaviate_api_key, openai_api_key, user_id)
 
 def clean_expired_connections():
     """Clean expired connections from the pool. Call this from a scheduled task."""

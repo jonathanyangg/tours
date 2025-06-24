@@ -10,6 +10,7 @@ from weaviate.classes.init import Auth
 import weaviate.classes as wvc
 from contextlib import contextmanager
 from ..auth import get_token_then_APIS_cached
+from ..weaviate_pool import get_weaviate_client
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -25,102 +26,76 @@ EMBEDDING_MODEL = "text-embedding-3-large"
 collection_name = "Tour_guides"
 
 
-@contextmanager
-def get_weaviate_client(weaviate_url=None, weaviate_api_key=None, openai_api_key=None):
-    client = None
-    headers = {
-    "X-OpenAI-Api-Key": openai_api_key,
-    }
-
-    try:
-        client = weaviate.connect_to_weaviate_cloud(
-            cluster_url=weaviate_url,
-            auth_credentials=Auth.api_key(weaviate_api_key),
-            headers=headers
-        )
-        logger.info("Successfully connected to Weaviate")
-        yield client
-    except Exception as e:
-        logger.error(f"Failed to connect to Weaviate: {e}")
-        raise
-    finally:
-        if client:
-            client.close()
-            logger.info("Closed Weaviate connection")
-
-def create_schema(weaviate_url=None, weaviate_api_key=None, openai_api_key=None):
-
-
-    
+def create_schema(weaviate_url=None, weaviate_api_key=None, openai_api_key=None, user_id=None):
     """Create or update the Weaviate schema for tour guides."""
     try:
-        with get_weaviate_client(weaviate_url, weaviate_api_key, openai_api_key) as client:
+        client = get_weaviate_client(weaviate_url, weaviate_api_key, openai_api_key, user_id)
             # List existing collections (schemas)
-            existing_collections = client.collections.list_all()
-            logger.info(f"Existing collections: {existing_collections}")
-            
-            # Delete existing tour_guides collection if it exists
-            if collection_name in existing_collections:
-                logger.info(f"{collection_name} collection already exists. Deleting it first...")
-                client.collections.delete(collection_name)
-                logger.info(f"Successfully deleted existing {collection_name} collection")
-            
-            # Define the schema properties
-            properties = [
-                wvc.config.Property(
-                    name="student_id",
-                    data_type=wvc.config.DataType.TEXT,
-                    description="Unique identifier for the tour guide",
-                    indexFilterable=True,
-                    indexSearchable=True
-                ),
-                wvc.config.Property(
-                    name="gender",
-                    data_type=wvc.config.DataType.TEXT,
-                    description="Gender of the tour guide",
-                    indexFilterable=True,
-                    indexSearchable=True
-                ),
-                wvc.config.Property(
-                    name="grade",
-                    data_type=wvc.config.DataType.TEXT,
-                    description="Grade level of the tour guide",
-                    indexFilterable=True,
-                    indexSearchable=True
-                ),
-                wvc.config.Property(
-                    name="residential_status",
-                    data_type=wvc.config.DataType.TEXT,
-                    description="Residential status of the tour guide",
-                    indexFilterable=True,
-                    indexSearchable=True
-                ),
-                wvc.config.Property(
-                    name="text_representation",
-                    data_type=wvc.config.DataType.TEXT,
-                    description="A text representation of the tour guide's information for vector search",
-                    indexFilterable=False,
-                    indexSearchable=True,
-                    tokenization=wvc.config.Tokenization.WORD
-                )
-            ]
-            
-            # Configure the OpenAI vectorizer
-            vectorizer_config = wvc.config.Configure.NamedVectors.text2vec_openai(
-                name="text_vector",
-                source_properties=["text_representation"],
-                model=EMBEDDING_MODEL,
-                dimensions=3072
+        existing_collections = client.collections.list_all()
+        logger.info(f"Existing collections: {existing_collections}")
+        
+        # Delete existing tour_guides collection if it exists
+        if collection_name in existing_collections:
+            logger.info(f"{collection_name} collection already exists. Deleting it first...")
+            client.collections.delete(collection_name)
+            logger.info(f"Successfully deleted existing {collection_name} collection")
+        
+        # Define the schema properties
+        properties = [
+            wvc.config.Property(
+                name="student_id",
+                data_type=wvc.config.DataType.TEXT,
+                description="Unique identifier for the tour guide",
+                indexFilterable=True,
+                indexSearchable=True
+            ),
+            wvc.config.Property(
+                name="gender",
+                data_type=wvc.config.DataType.TEXT,
+                description="Gender of the tour guide",
+                indexFilterable=True,
+                indexSearchable=True
+            ),
+            wvc.config.Property(
+                name="grade",
+                data_type=wvc.config.DataType.TEXT,
+                description="Grade level of the tour guide",
+                indexFilterable=True,
+                indexSearchable=True
+            ),
+            wvc.config.Property(
+                name="residential_status",
+                data_type=wvc.config.DataType.TEXT,
+                description="Residential status of the tour guide",
+                indexFilterable=True,
+                indexSearchable=True
+            ),
+            wvc.config.Property(
+                name="text_representation",
+                data_type=wvc.config.DataType.TEXT,
+                description="A text representation of the tour guide's information for vector search",
+                indexFilterable=False,
+                indexSearchable=True,
+                tokenization=wvc.config.Tokenization.WORD
             )
-            
-            # Create the collection
-            client.collections.create(
-                name=collection_name,
-                description="A tour guide with their information and vector embedding",
-                properties=properties,
-                vectorizer_config=[vectorizer_config]
-            )
-            logger.info(f"Created {collection_name} schema in Weaviate")
+        ]
+        
+        # Configure the OpenAI vectorizer
+        vectorizer_config = wvc.config.Configure.NamedVectors.text2vec_openai(
+            name="text_vector",
+            source_properties=["text_representation"],
+            model=EMBEDDING_MODEL,
+            dimensions=3072
+        )
+        
+        # Create the collection
+        client.collections.create(
+            name=collection_name,
+            description="A tour guide with their information and vector embedding",
+            properties=properties,
+            vectorizer_config=[vectorizer_config]
+        )
+        logger.info(f"Created {collection_name} schema in Weaviate")
     except Exception as e:
         logger.error(f"Error creating schema: {e}")
         raise
@@ -204,6 +179,7 @@ async def upload_tour_guides(file: UploadFile = File(...), api_keys=Depends(get_
     weaviate_url = api_keys["weaviate_url"]
     weaviate_api_key = api_keys["weaviate_api_key"]
     openai_api_key = api_keys["openai_api_key"]
+    user_id = api_keys["user_id"]
 
     if not file.filename.endswith('.csv'):
         logger.error(f"Invalid file type: {file.filename}")
@@ -256,42 +232,49 @@ async def upload_tour_guides(file: UploadFile = File(...), api_keys=Depends(get_
 async def get_tour_guides(api_keys=Depends(get_token_then_APIS_cached)):
     """Retrieve tour guide information from Weaviate."""
     logger.info(f"API keys: {api_keys}")
+    
     weaviate_url = api_keys["weaviate_url"]
     weaviate_api_key = api_keys["weaviate_api_key"]
     openai_api_key = api_keys["openai_api_key"]
+    user_id = api_keys["user_id"]
+    
 
+    client = get_weaviate_client(weaviate_url, weaviate_api_key, openai_api_key, user_id)
+
+    if client is None:
+        raise HTTPException(status_code=500, detail="Failed to connect to Weaviate")
+    
     try:
-        with get_weaviate_client(weaviate_url, weaviate_api_key, openai_api_key) as client:
-            # Check if the tour_guides collection exists
-            if collection_name not in client.collections.list_all():
-                return {
-                    "status": "empty",
-                    "message": "No tour guides currently in database",
-                    "students": []
-                }
-            
-            # Get the collection
-            tour_guide_collection = client.collections.get(collection_name)
-            
-            # Using the newer API with proper method chain - fetch all records (set high limit)
-            query_result = tour_guide_collection.query.fetch_objects(limit=10000)
-            
-            # Convert the response to a format that can be JSON serialized
-            students = []
-            if query_result and hasattr(query_result, 'objects'):
-                for obj in query_result.objects:
-                    students.append({
-                        "student_id": obj.properties.get("student_id", ""),
-                        "gender": obj.properties.get("gender", ""),
-                        "grade": obj.properties.get("grade", ""),
-                        "residential_status": obj.properties.get("residential_status", "")
-                    })
-            
+        # Check if the tour_guides collection exists
+        if collection_name not in client.collections.list_all():
             return {
-                "status": "success",
-                "message": "Tour guides retrieved successfully",
-                "students": students
+                "status": "empty",
+                "message": "No tour guides currently in database",
+                "students": []
             }
+        
+        # Get the collection
+        tour_guide_collection = client.collections.get(collection_name)
+        
+        # Using the newer API with proper method chain - fetch all records (set high limit)
+        query_result = tour_guide_collection.query.fetch_objects(limit=10000)
+        
+        # Convert the response to a format that can be JSON serialized
+        students = []
+        if query_result and hasattr(query_result, 'objects'):
+            for obj in query_result.objects:
+                students.append({
+                    "student_id": obj.properties.get("student_id", ""),
+                    "gender": obj.properties.get("gender", ""),
+                    "grade": obj.properties.get("grade", ""),
+                    "residential_status": obj.properties.get("residential_status", "")
+                })
+        
+        return {
+            "status": "success",
+            "message": "Tour guides retrieved successfully",
+            "students": students
+        }
     except Exception as e:
         logger.error(f"Error retrieving tour guide information: {e}")
         raise HTTPException(status_code=500, detail=str(e))
