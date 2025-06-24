@@ -1,192 +1,23 @@
 from fastapi import APIRouter, HTTPException, Depends
-from pydantic import BaseModel
-from typing import Optional
-from weaviate.collections.classes.filters import Filter
-import weaviate.classes as wvc
-import os
-from dotenv import load_dotenv
 import logging
 import json
+from weaviate.collections.classes.filters import Filter
 from ..auth import get_token_then_APIS_cached, get_school_api_keys
 from ..weaviate_pool import get_weaviate_client
+from .visiting_student_functions import (
+    VisitingStudent, 
+    create_schema, 
+    create_text_representation, 
+    prepare_student_data,
+    collection_name
+)
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-load_dotenv()
-
 router = APIRouter()
 
-# Configuration constants
-EMBEDDING_MODEL = "text-embedding-3-large"
-BATCH_SIZE = 100
-collection_name = "Visiting_students"
-
-
-
-class VisitingStudent(BaseModel):
-    school: str
-    name: str
-    email: str
-    gender: str
-    grade: str
-    residential_status: str
-    city_country: str
-    sports: Optional[str] = None
-    extracurricular_activities: Optional[str] = None
-    academic_interests: Optional[str] = None
-    additional_information: Optional[str] = None
-    race: Optional[str] = None
-    tour_datetime: str
-    is_matched: Optional[bool] = False
-    matched_tour_guide: Optional[str] = None
-
-def create_schema(weaviate_url=None, weaviate_api_key=None, openai_api_key=None, user_id=None):
-    """Create the Weaviate schema for visiting students if it doesn't exist."""
-    try:
-        client = get_weaviate_client(weaviate_url, weaviate_api_key, openai_api_key, user_id)
-        # List existing collections (schemas)
-        existing_collections = client.collections.list_all()
-        logger.info(f"Existing collections: {existing_collections}")
-        
-        if collection_name not in existing_collections:
-            properties = [
-                wvc.config.Property(
-                    name="school",
-                    data_type=wvc.config.DataType.TEXT,
-                    description="School of the visiting student",
-                    indexFilterable=True,
-                    indexSearchable=True
-                ),
-                wvc.config.Property(
-                    name="name",
-                    data_type=wvc.config.DataType.TEXT,
-                    description="Name of the visiting student",
-                    indexFilterable=True,
-                    indexSearchable=True
-                ),
-                wvc.config.Property(
-                    name="email",
-                    data_type=wvc.config.DataType.TEXT,
-                    description="Email address of the visiting student",
-                    indexFilterable=True,
-                    indexSearchable=True
-                ),
-                wvc.config.Property(
-                    name="gender",
-                    data_type=wvc.config.DataType.TEXT,
-                    description="Gender of the visiting student",
-                    indexFilterable=True,
-                    indexSearchable=True
-                ),
-                wvc.config.Property(
-                    name="grade",
-                    data_type=wvc.config.DataType.TEXT,
-                    description="Grade level of the visiting student",
-                    indexFilterable=True,
-                    indexSearchable=True
-                ),
-                wvc.config.Property(
-                    name="residential_status",
-                    data_type=wvc.config.DataType.TEXT,
-                    description="Residential status of the visiting student",
-                    indexFilterable=True,
-                    indexSearchable=True
-                ),
-                wvc.config.Property(
-                    name="city_country",
-                    data_type=wvc.config.DataType.TEXT,
-                    description="City and country of the visiting student",
-                    indexFilterable=True,
-                    indexSearchable=True
-                ),
-                wvc.config.Property(
-                    name="sports",
-                    data_type=wvc.config.DataType.TEXT,
-                    description="Sports interests of the visiting student",
-                    indexFilterable=True,
-                    indexSearchable=True
-                ),
-                wvc.config.Property(
-                    name="extracurricular_activities",
-                    data_type=wvc.config.DataType.TEXT,
-                    description="Extracurricular activities of the visiting student",
-                    indexFilterable=True,
-                    indexSearchable=True
-                ),
-                wvc.config.Property(
-                    name="academic_interests",
-                    data_type=wvc.config.DataType.TEXT,
-                    description="Academic interests of the visiting student",
-                    indexFilterable=True,
-                    indexSearchable=True
-                ),
-                wvc.config.Property(
-                    name="additional_information",
-                    data_type=wvc.config.DataType.TEXT,
-                    description="Additional information about the visiting student",
-                    indexFilterable=True,
-                    indexSearchable=True
-                ),
-                wvc.config.Property(
-                    name="race",
-                    data_type=wvc.config.DataType.TEXT,
-                    description="Race of the visiting student",
-                    indexFilterable=True,
-                    indexSearchable=True
-                ),
-                wvc.config.Property(
-                    name="tour_datetime",
-                    data_type=wvc.config.DataType.TEXT,
-                    description="Date and time of the tour",
-                    indexFilterable=True,
-                    indexSearchable=True
-                ),
-                wvc.config.Property(
-                    name="is_matched",
-                    data_type=wvc.config.DataType.INT,
-                    description="Whether the student has been matched with a tour guide (0=unmatched, 1=matched)",
-                    indexFilterable=True,
-                    indexSearchable=False
-                ),
-                wvc.config.Property(
-                    name="matched_tour_guide",
-                    data_type=wvc.config.DataType.TEXT,
-                    description="The ID of the matched tour guide",
-                    indexFilterable=True,
-                    indexSearchable=True
-                ),
-                wvc.config.Property(
-                    name="text_representation",
-                    data_type=wvc.config.DataType.TEXT,
-                    description="A text representation of the student's information for vector search",
-                    indexFilterable=False,
-                    indexSearchable=True,
-                    tokenization=wvc.config.Tokenization.WORD
-                )
-            ]
-            
-            # Configure the OpenAI vectorizer
-            vectorizer_config = wvc.config.Configure.NamedVectors.text2vec_openai(
-                name="text_vector",
-                source_properties=["text_representation"],
-                model=EMBEDDING_MODEL,
-                dimensions=3072
-            )
-            
-            client.collections.create(
-                name=collection_name,
-                description="A visiting student with their information and vector embedding",
-                properties=properties,
-                vectorizer_config=[vectorizer_config],
-            )
-            logger.info(f"Created {collection_name} schema in Weaviate")
-        else:
-            logger.info(f"{collection_name} schema already exists")
-    except Exception as e:
-        logger.error(f"Error creating schema: {e}")
-        raise
 
 @router.post("/visiting-students")
 async def create_visiting_student(student: VisitingStudent):
@@ -201,28 +32,12 @@ async def create_visiting_student(student: VisitingStudent):
         weaviate_api_key = api_keys["weaviate_api_key"]
         openai_api_key = api_keys["openai_api_key"]
         user_id = "school_user"  # For school-based endpoints, use a generic user_id
-        logger.info(f"Weaviate url: {weaviate_url}")
-        logger.info(f"Weaviate api key: {weaviate_api_key}")
-        logger.info(f"Openai api key: {openai_api_key}")
+        logger.info(f"Processing student for school: {school_ceeb}")
+        logger.info(f"Using Weaviate cluster: {weaviate_url}")
+        # NEVER log API keys - security risk!
 
         # Create text representation for vector search
-        text_fields = []
-        if student.residential_status:
-            text_fields.append(f"residential status: {student.residential_status}")
-        if student.city_country:
-            text_fields.append(f"city country: {student.city_country}")
-        if student.sports:
-            text_fields.append(f"sports: {student.sports}")
-        if student.extracurricular_activities:
-            text_fields.append(f"extracurricular activities: {student.extracurricular_activities}")
-        if student.academic_interests:
-            text_fields.append(f"academic interests: {student.academic_interests}")
-        if student.additional_information:
-            text_fields.append(f"additional information: {student.additional_information}")
-        if student.race:
-            text_fields.append(f"race: {student.race}")
-
-        text_representation = ", ".join(text_fields)
+        text_representation = create_text_representation(student)
         logger.info(f"Generated text representation: {text_representation}")
 
         # Log that vector was generated
@@ -236,24 +51,7 @@ async def create_visiting_student(student: VisitingStudent):
         logger.info(f"Retrieved {collection_name} collection")
 
         # Create the student object
-        student_data = {
-            "school": student.school,
-            "name": student.name,
-            "email": student.email,
-            "gender": student.gender,
-            "grade": student.grade,
-            "residential_status": student.residential_status,
-            "city_country": student.city_country,
-            "sports": student.sports,
-            "extracurricular_activities": student.extracurricular_activities,
-            "academic_interests": student.academic_interests,
-            "additional_information": student.additional_information,
-            "race": student.race,
-            "tour_datetime": student.tour_datetime,
-            "is_matched": 0,  # Initialize as unmatched (0)
-            "matched_tour_guide": student.matched_tour_guide,
-            "text_representation": text_representation  # Always include the generated text representation
-        }
+        student_data = prepare_student_data(student, text_representation)
         logger.info(f"Prepared student data for insertion: {json.dumps(student_data, indent=2)}")
 
         # Insert the student into Weaviate
@@ -290,6 +88,7 @@ async def create_visiting_student(student: VisitingStudent):
     except Exception as e:
         logger.error(f"Error creating visiting student: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
 
 @router.get("/visiting-students")
 async def get_visiting_students(api_data=Depends(get_token_then_APIS_cached)):
@@ -346,6 +145,7 @@ async def get_visiting_students(api_data=Depends(get_token_then_APIS_cached)):
     except Exception as e:
         logger.error(f"Error retrieving visiting students: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
 
 @router.get("/visiting-students/unmatched")
 async def get_unmatched_students(api_data=Depends(get_token_then_APIS_cached)):
@@ -406,6 +206,7 @@ async def get_unmatched_students(api_data=Depends(get_token_then_APIS_cached)):
         logger.error(f"Error retrieving unmatched students: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+
 @router.get("/visiting-students/matched")
 async def get_matched_students(api_data=Depends(get_token_then_APIS_cached)):
     """Retrieve all matched visiting students from Weaviate."""
@@ -465,6 +266,7 @@ async def get_matched_students(api_data=Depends(get_token_then_APIS_cached)):
         logger.error(f"Error retrieving matched students: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+
 @router.post("/visiting-students/{student_email}/match")
 async def update_student_match(student_email: str, tour_guide_id: str, api_data=Depends(get_token_then_APIS_cached)):
     """Update a student's match status and assign a tour guide."""
@@ -506,6 +308,7 @@ async def update_student_match(student_email: str, tour_guide_id: str, api_data=
     except Exception as e:
         logger.error(f"Error updating student match: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
 
 @router.post("/visiting-students/{student_email}/unmatch")
 async def unmatch_student(student_email: str, api_data=Depends(get_token_then_APIS_cached)):
@@ -549,6 +352,7 @@ async def unmatch_student(student_email: str, api_data=Depends(get_token_then_AP
         logger.error(f"Error unmatching student: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+
 @router.delete("/visiting-students/{student_email}")
 async def delete_visiting_student(student_email: str, api_data=Depends(get_token_then_APIS_cached)):
     """Delete a visiting student from Weaviate."""
@@ -583,4 +387,4 @@ async def delete_visiting_student(student_email: str, api_data=Depends(get_token
         }
     except Exception as e:
         logger.error(f"Error deleting student: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) 

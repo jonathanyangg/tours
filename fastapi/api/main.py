@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from .tour_guides.tour_guides import router as tour_guides_router
-from .visiting_students.visiting_students import router as visiting_students_router
+from .tour_guides.tour_guide_routes import router as tour_guides_router
+from .visiting_students.visiting_student_routes import router as visiting_students_router
 from .tour_guides.tour_guide_deletion import router as tour_guide_deletion_router
 from .visiting_students.visiting_student_deletion import router as visiting_student_deletion_router
 from .matching import router as matching_router
