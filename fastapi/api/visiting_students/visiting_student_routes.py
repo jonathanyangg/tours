@@ -19,12 +19,12 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-@router.post("/visiting-students")
-async def create_visiting_student(student: VisitingStudent):
+@router.post("/visiting-students/{ceeb_code}")
+async def create_visiting_student(ceeb_code: str, student: VisitingStudent):
     """Create a new visiting student record and store it in Weaviate."""
     try:
-        logger.info(f"Received visiting student data: {json.dumps(student.model_dump(), indent=2)}")
-        school_ceeb = student.school
+        logger.info(f"Received visiting student data for school {ceeb_code}: {json.dumps(student.model_dump(), indent=2)}")
+        school_ceeb = ceeb_code
        
         api_keys = get_school_api_keys(school_ceeb)
         
@@ -51,7 +51,7 @@ async def create_visiting_student(student: VisitingStudent):
         logger.info(f"Retrieved {collection_name} collection")
 
         # Create the student object
-        student_data = prepare_student_data(student, text_representation)
+        student_data = prepare_student_data(student, school_ceeb, text_representation)
         logger.info(f"Prepared student data for insertion: {json.dumps(student_data, indent=2)}")
 
         # Insert the student into Weaviate
@@ -69,8 +69,7 @@ async def create_visiting_student(student: VisitingStudent):
         
         if inserted_student.objects:
             student_obj = inserted_student.objects[0]
-            logger.info(f"Retrieved inserted student object: {student_obj}")
-            logger.info(f"Vector property: {student_obj.vector}")
+            logger.info(f"Student object retrieved successfully for email: {student.email}")
             if student_obj.vector:
                 logger.info("Vector was successfully generated and stored")
             else:

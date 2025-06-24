@@ -6,6 +6,7 @@ from .tour_guides.tour_guide_deletion import router as tour_guide_deletion_route
 from .visiting_students.visiting_student_deletion import router as visiting_student_deletion_router
 from .matching import router as matching_router
 from .test_protected import router as test_protected_router
+from .weaviate_pool import health_check_cleanup_thread
 
 app = FastAPI()
 
@@ -62,3 +63,8 @@ app.include_router(
 @app.get("/")
 def health_check():
     return 'healthy'
+
+@app.get("/api/weaviate-health")
+def weaviate_health_check():
+    """Check if Weaviate pool cleanup thread is running and restart if needed."""
+    return health_check_cleanup_thread()

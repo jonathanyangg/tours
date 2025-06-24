@@ -33,7 +33,6 @@ import {
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
 
 type VisitingStudentForm = {
-  school: string;
   name: string;
   email: string;
   gender: string;
@@ -48,9 +47,13 @@ type VisitingStudentForm = {
   tour_datetime: string;
 };
 
-export default function VisitingForm() {
+interface VisitingFormProps {
+  schoolCeeb: string;
+  schoolName: string;
+}
+
+export default function VisitingForm({ schoolCeeb, schoolName }: VisitingFormProps) {
   const [formData, setFormData] = useState<VisitingStudentForm>({
-    school: '',
     name: '',
     email: '',
     gender: '',
@@ -112,8 +115,8 @@ export default function VisitingForm() {
     setIsSubmitting(true);
     setError(null);
   
-    // Validate required fields
-    const requiredFields = ['school','name', 'email', 'gender', 'grade', 'tour_datetime'];
+    // Validate required fields (removed 'school' from validation)
+    const requiredFields = ['name', 'email', 'gender', 'grade', 'tour_datetime'];
     const missingFields = requiredFields.filter(field => !formData[field as keyof VisitingStudentForm]);
     if (missingFields.length > 0) {
       setError(`Missing required fields: ${missingFields.join(', ')}`);
@@ -122,7 +125,7 @@ export default function VisitingForm() {
     }
   
     try {
-      const response = await fetch(`${API_BASE_URL}/visiting-students`, {
+      const response = await fetch(`${API_BASE_URL}/visiting-students/${schoolCeeb}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -151,7 +154,7 @@ export default function VisitingForm() {
         <CardHeader className="text-center pb-8">
           <CardTitle className="flex items-center justify-center gap-3 text-2xl font-bold">
             <GraduationCap className="h-7 w-7 text-primary" />
-            AI Campus Tour Matching
+            {schoolName} - AI Campus Tour Matching
           </CardTitle>
           <CardDescription className="text-base mt-2 max-w-2xl mx-auto">
             Tell us more about yourself! We'll use our AI algorithm to match you with a tour guide who shares your interests and background.
@@ -178,19 +181,6 @@ export default function VisitingForm() {
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="school" className="text-sm font-medium">School *</Label>
-                    <Select name="school" value={formData.school} onValueChange={(value) => { setFormData({...formData, school: value}); }} required>
-                      <SelectTrigger className="h-11">
-                        <SelectValue placeholder="Select your school" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="310680">The Lawrenceville School</SelectItem>
-                        <SelectItem value="311265">Princeton Day School</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
                   <div className="space-y-2">
                     <Label htmlFor="name" className="text-sm font-medium">Full Name *</Label>
                     <Input
@@ -399,8 +389,6 @@ export default function VisitingForm() {
                       className="h-11"
                     />
                   </div>
-
-                  
 
                   <div className="space-y-2">
                     <Label htmlFor="additional_information" className="text-sm font-medium">Additional Information</Label>

@@ -2,6 +2,7 @@ import weaviate
 from weaviate.classes.init import Auth
 import logging
 import threading
+import time
 from datetime import datetime, timedelta
 from typing import Dict, Optional
 
@@ -51,6 +52,23 @@ class WeaviatePool:
         self._pool: Dict[str, WeaviateClientWrapper] = {}
         self._lock = threading.RLock()
         self.idle_timeout = timedelta(minutes=idle_timeout_minutes)
+        self._cleanup_thread = None
+        self._start_cleanup_thread()
+
+    def _start_cleanup_thread(self):
+        """Start the background cleanup thread."""
+        self._cleanup_thread = threading.Thread(target=self._cleanup_worker, daemon=True)
+        self._cleanup_thread.start()
+        logger.info("Started Weaviate pool cleanup thread")
+
+    def _cleanup_worker(self):
+        """Background worker that cleans expired connections every hour."""
+        while True:
+            time.sleep(3600)  # Wait 1 hour (3600 seconds)
+            try:
+                self.clean_expired_clients()
+            except Exception as e:
+                logger.error(f"Error in cleanup worker: {e}")
 
     def get_client(self, weaviate_url: str, weaviate_api_key: str, openai_api_key: str, user_id: str):
         """Get a Weaviate client from the pool or create a new one."""
@@ -94,16 +112,28 @@ class WeaviatePool:
                                  for user_id, wrapper in self._pool.items()}
             }
 
+    def health_check_and_restart(self):
+        """Check if cleanup thread is alive and restart if needed."""
+        is_alive = self._cleanup_thread and self._cleanup_thread.is_alive()
+        
+        if not is_alive:
+            logger.warning("Cleanup thread is dead, restarting...")
+            self._start_cleanup_thread()
+            return {"status": "restarted", "thread_alive": True}
+        else:
+            return {"status": "healthy", "thread_alive": True}
+
+
 # Global pool instance
 _weaviate_pool = WeaviatePool(idle_timeout_minutes=30)
 
 def get_weaviate_client(weaviate_url: str, weaviate_api_key: str, openai_api_key: str, user_id: str):
     return _weaviate_pool.get_client(weaviate_url, weaviate_api_key, openai_api_key, user_id)
 
-def clean_expired_connections():
-    """Clean expired connections from the pool. Call this from a scheduled task."""
-    _weaviate_pool.clean_expired_clients()
-
 def get_pool_status():
     """Get current pool status for debugging."""
     return _weaviate_pool.get_pool_status()
+
+def health_check_cleanup_thread():
+    """Public function to check and restart cleanup thread if needed."""
+    return _weaviate_pool.health_check_and_restart()

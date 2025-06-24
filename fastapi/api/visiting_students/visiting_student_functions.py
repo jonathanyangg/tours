@@ -15,7 +15,6 @@ collection_name = "Visiting_students"
 
 
 class VisitingStudent(BaseModel):
-    school: str
     name: str
     email: str
     gender: str
@@ -200,10 +199,10 @@ def create_text_representation(student: VisitingStudent) -> str:
     return ", ".join(text_fields)
 
 
-def prepare_student_data(student: VisitingStudent, text_representation: str) -> dict:
+def prepare_student_data(student: VisitingStudent, school_ceeb: str, text_representation: str) -> dict:
     """Prepare student data for insertion into Weaviate."""
     return {
-        "school": student.school,
+        "school": school_ceeb,
         "name": student.name,
         "email": student.email,
         "gender": student.gender,
