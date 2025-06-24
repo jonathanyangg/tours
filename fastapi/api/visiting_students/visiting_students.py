@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 import logging
 import json
 from contextlib import contextmanager
-from ..auth import get_token_then_APIS, get_token_then_APIS_cached, get_school_api_keys
+from ..auth import get_token_then_APIS_cached, get_school_api_keys
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)

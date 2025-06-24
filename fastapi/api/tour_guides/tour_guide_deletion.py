@@ -3,7 +3,7 @@ import logging
 from contextlib import contextmanager
 import weaviate
 from weaviate.classes.init import Auth
-from ..auth import get_token_then_APIS, get_token_then_APIS_cached
+from ..auth import get_token_then_APIS_cached
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)

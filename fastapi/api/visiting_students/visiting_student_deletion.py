@@ -3,13 +3,13 @@ import logging
 from contextlib import contextmanager
 import weaviate
 from weaviate.classes.init import Auth
-from ..auth import get_token_then_APIS, get_token_then_APIS_cached
+from ..auth import get_token_then_APIS_cached
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-router = APIRouter()
+router = APIRouter()    
 
 @contextmanager
 def get_weaviate_client(visiting_students_weaviate_url=None, visiting_students_weaviate_api_key=None, openai_api_key=None):
