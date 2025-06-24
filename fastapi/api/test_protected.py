@@ -20,8 +20,8 @@ async def test_protected_route(response_data=Depends(get_current_user)):
     """
     return {
         "message": "You have successfully accessed a protected route!",
-        "user_id": response_data.id,
-        "email": response_data.email,
+        "user_id": response_data["id"],
+        "email": response_data["email"],
         "status": "success"
     }
 

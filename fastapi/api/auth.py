@@ -155,7 +155,7 @@ def get_token_then_APIS_cached(credentials: HTTPAuthorizationCredentials = Depen
             if not api_keys_response.data:
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
-                    detail="No API keys found"
+                    detail=f"No API keys found for user {user_id}"
                 )
             
             credentials_data = api_keys_response.data[0]
