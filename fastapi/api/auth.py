@@ -19,7 +19,8 @@ load_dotenv()
 bearer_scheme = HTTPBearer()
 
 # Supabase JWT secret for local validation
-JWT_SECRET = os.getenv("SUPABASE_JWT_SECRET")
+# JWT_SECRET = os.getenv("SUPABASE_JWT_SECRET")
+JWT_SECRET = "ZG9KjKzy8KdjoH/zECA/GOnpAajhsYKyHT1hJ6DtN9bMkqwd9zDjpui67Nlz0fZixjx/ZRd4c34z2XbW2eTVUg=="
 
 class AuthCache:
     """Thread-safe cache for API credentials with TTL expiration."""
@@ -145,7 +146,7 @@ def get_token_then_APIS_cached(credentials: HTTPAuthorizationCredentials = Depen
             return cached_credentials
         
         # Step 3: Cache miss - fetch from database
-        with get_supabase_client() as supabase:
+        with get_admin_supabase_client() as supabase:
             api_keys_response = supabase.table('admin_to_school').select(
                 'weaviate_url', 
                 'weaviate_api_key', 
