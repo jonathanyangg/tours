@@ -20,13 +20,13 @@ app.add_middleware(
 # Include the deletion routers
 app.include_router(
     tour_guide_deletion_router, 
-    prefix="/api/tour-guides", 
+    prefix="/api", 
     tags=["tour-guide-deletion"]
 )
 
 app.include_router(
     visiting_student_deletion_router, 
-    prefix="/api/visiting-students", 
+    prefix="/api", 
     tags=["visiting-student-deletion"]
 )
 

@@ -47,7 +47,7 @@ def delete_tour_guide_schema(tour_guides_weaviate_url=None, tour_guides_weaviate
         logger.error(f"Error deleting TourGuide schema: {e}")
         raise
 
-@router.delete("/schema")
+@router.delete("/tour-guides-deletion/schema")
 async def delete_schema(api_keys=Depends(get_token_then_APIS_cached)):
     """Endpoint to delete the tour guide schema. Use with caution as this will delete all tour guide data."""
     try:
