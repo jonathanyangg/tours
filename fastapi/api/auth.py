@@ -19,8 +19,7 @@ load_dotenv()
 bearer_scheme = HTTPBearer()
 
 # Supabase JWT secret for local validation
-# JWT_SECRET = os.getenv("SUPABASE_JWT_SECRET")
-JWT_SECRET = "ZG9KjKzy8KdjoH/zECA/GOnpAajhsYKyHT1hJ6DtN9bMkqwd9zDjpui67Nlz0fZixjx/ZRd4c34z2XbW2eTVUg=="
+JWT_SECRET = os.getenv("SUPABASE_JWT_SECRET")
 
 class AuthCache:
     """Thread-safe cache for API credentials with TTL expiration."""
