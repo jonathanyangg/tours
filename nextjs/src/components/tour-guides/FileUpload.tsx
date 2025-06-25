@@ -5,7 +5,7 @@ import { uploadTourGuides } from '@/services/api';
 import { UploadResult } from '@/types/api';
 
 interface FileUploadProps {
-  onUploadSuccess?: (data: UploadResult) => void;
+  onUploadSuccess?: (result: UploadResult) => void;
   onUploadError?: (error: Error) => void;
 }
 

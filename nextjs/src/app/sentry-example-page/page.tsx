@@ -17,10 +17,15 @@ export default function Page() {
   
   useEffect(() => {
     async function checkConnectivity() {
-      const result = await Sentry.diagnoseSdkConnectivity();
-      setIsConnected(result !== 'sentry-unreachable');
+      try {
+        const result = await Sentry.diagnoseSdkConnectivity();
+        setIsConnected(result !== 'sentry-unreachable');
+      } catch (error) {
+        console.error('Failed to check Sentry connectivity:', error);
+        setIsConnected(false);
+      }
     }
-    checkConnectivity();
+    void checkConnectivity();
   }, []);
 
   return (
@@ -46,17 +51,24 @@ export default function Page() {
 
         <button
           type="button"
-          onClick={async () => {
-            await Sentry.startSpan({
-              name: 'Example Frontend Span',
-              op: 'test'
-            }, async () => {
-              const res = await fetch("/api/sentry-example-api");
-              if (!res.ok) {
-                setHasSentError(true);
-                throw new SentryExampleFrontendError("This error is raised on the frontend of the example page.");
-              }
-            });
+          onClick={() => {
+            void (async () => {
+              try {
+                await Sentry.startSpan({
+                  name: 'Example Frontend Span',
+                  op: 'test'
+                }, async () => {
+                  const res = await fetch("/api/sentry-example-api");
+                  if (!res.ok) {
+                    setHasSentError(true);
+                    throw new SentryExampleFrontendError("This error is raised on the frontend of the example page.");
+                  }
+                });
+                             } catch {
+                 setHasSentError(true);
+                 // Error is already captured by Sentry through the span
+               }
+            })();
           }}
         >
           <span>

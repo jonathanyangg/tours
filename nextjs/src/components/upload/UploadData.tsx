@@ -20,8 +20,8 @@ export default function UploadData() {
   const [uploadResult, setUploadResult] = useState<UploadResult | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
 
-  const handleUploadSuccess = (data: UploadResult) => {
-    setUploadResult(data);
+  const handleUploadSuccess = (result: UploadResult) => {
+    setUploadResult(result);
     setUploadError(null);
   };
 
