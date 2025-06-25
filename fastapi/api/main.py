@@ -10,6 +10,15 @@ from .visiting_students.visiting_student_deletion import router as visiting_stud
 from .matching import router as matching_router
 from .test_protected import router as test_protected_router
 from .weaviate_pool import router as weaviate_pool_router
+import sentry_sdk
+
+sentry_sdk.init(
+    dsn="https://06c781d64bb16822b7082821f28e02d9@o4509522298994688.ingest.us.sentry.io/4509522320949248",
+    # Add data like request headers and IP for users,
+    # see https://docs.sentry.io/platforms/python/data-management/data-collected/ for more info
+    send_default_pii=True,
+)
+
 
 app = FastAPI()
 
