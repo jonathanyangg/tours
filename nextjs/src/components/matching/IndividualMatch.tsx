@@ -109,10 +109,7 @@ export default function IndividualMatch() {
     }
   };
   
-  // Function to format similarity score as percentage
-  const formatSimilarity = (score: number) => {
-    return `${Math.round(score * 100)}%`;
-  };
+
 
   // Function to format distance score
   const formatDistance = (distance: number | undefined) => {
@@ -140,7 +137,7 @@ export default function IndividualMatch() {
             Student Information
           </CardTitle>
           <CardDescription>
-            Fill out the form below to find matching tour guides based on the student's profile.
+            Fill out the form below to find matching tour guides based on the student&apos;s profile.
           </CardDescription>
         </CardHeader>
 
@@ -181,7 +178,7 @@ export default function IndividualMatch() {
                     <SelectItem value="9">Freshman</SelectItem>
                     <SelectItem value="10">Sophomore</SelectItem>
                     <SelectItem value="11">Junior</SelectItem>
-                    <SelectItem value="12">Senior/PG</SelectItem>
+                    <SelectItem value="12">Senior&sol;PG</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -200,13 +197,13 @@ export default function IndividualMatch() {
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="city_country">City/Country</Label>
+                <Label htmlFor="city_country">City&sol;Country</Label>
                 <Input
                   type="text"
                   name="city_country"
                   value={formData.city_country}
                   onChange={handleChange}
-                  placeholder="Enter city/country"
+                  placeholder="Enter city&sol;country"
                 />
               </div>
               

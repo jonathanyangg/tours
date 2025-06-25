@@ -1,7 +1,6 @@
 import Navbar from '@/components/layout/Navbar';
 import Hero from '@/components/layout/Hero';
 import DatabaseMatches from '@/components/matching/DatabaseMatches';
-import IndividualMatch from '@/components/matching/IndividualMatch';
 import RecentMatches from '@/components/matching/RecentMatches';
 import Footer from '@/components/layout/Footer';
 

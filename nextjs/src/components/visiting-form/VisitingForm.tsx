@@ -1,6 +1,5 @@
 'use client'
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { ChevronDownIcon } from "lucide-react";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -23,10 +22,8 @@ import {
   GraduationCap,
   AlertCircle,
   Calendar as CalendarIcon,
-  Clock,
   User,
   MapPin,
-  BookOpen,
   Trophy
 } from 'lucide-react';
 
@@ -157,7 +154,7 @@ export default function VisitingForm({ schoolCeeb, schoolName }: VisitingFormPro
             {schoolName} - AI Campus Tour Matching
           </CardTitle>
           <CardDescription className="text-base mt-2 max-w-2xl mx-auto">
-            Tell us more about yourself! We'll use our AI algorithm to match you with a tour guide who shares your interests and background.
+            Tell us more about yourself! We&apos;ll use our AI algorithm to match you with a tour guide who shares your interests and background.
           </CardDescription>
         </CardHeader>
 
@@ -167,7 +164,7 @@ export default function VisitingForm({ schoolCeeb, schoolName }: VisitingFormPro
               <Alert className="border-green-200 bg-green-50 max-w-md mx-auto">
                 <CheckCircle2 className="h-5 w-5 text-green-600" />
                 <AlertDescription className="text-green-700 font-medium">
-                  Registration successful! We'll be in touch soon with tour details.
+                  Registration successful! We&apos;ll be in touch soon with tour details.
                 </AlertDescription>
               </Alert>
             </div>

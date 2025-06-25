@@ -2,9 +2,10 @@
 
 import { useState, useRef, ChangeEvent, DragEvent } from 'react';
 import { uploadTourGuides } from '@/services/api';
+import { UploadResult } from '@/types/api';
 
 interface FileUploadProps {
-  onUploadSuccess?: (data: any) => void;
+  onUploadSuccess?: (result: UploadResult) => void;
   onUploadError?: (error: Error) => void;
 }
 

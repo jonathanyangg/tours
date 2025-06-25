@@ -1,8 +1,6 @@
 import Navbar from '@/components/layout/Navbar';
 import TourGuides from '@/components/tour-guides/TourGuides';
 import Footer from '@/components/layout/Footer';
-import { redirect } from 'next/navigation'
-import { createClient } from '@/app/supabase/server'
 
 export default function TourGuidesPage() {
   

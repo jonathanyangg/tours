@@ -169,7 +169,7 @@ export const cssAnimationClasses = {
   focusRing: 'focus:ring-2 focus:ring-primary/50 focus:outline-none',
 };
 
-export default {
+const animations = {
   fadeInUp,
   staggerChildren,
   scaleUp,
@@ -181,4 +181,6 @@ export default {
   buttonTap,
   textReveal,
   cssAnimationClasses
-}; 
+};
+
+export default animations; 
