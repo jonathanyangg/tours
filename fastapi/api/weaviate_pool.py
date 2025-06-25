@@ -24,9 +24,7 @@ class WeaviateClientWrapper:
     def _connect(self):
         """Create and return a Weaviate client connection."""
         try:
-            headers = {
-                "X-OpenAI-Api-Key": self.openai_api_key,
-            }
+            headers = {"X-OpenAI-Api-Key": self.openai_api_key,}
             client = weaviate.connect_to_weaviate_cloud(
                 cluster_url=self.weaviate_url,
                 auth_credentials=Auth.api_key(self.weaviate_api_key),
@@ -54,13 +52,8 @@ class WeaviateClientWrapper:
 class WeaviatePool:
     def __init__(self, idle_timeout_minutes: int = 30):
         self._pool: Dict[str, WeaviateClientWrapper] = {}
-        self._lock = threading.RLock()
+        self._lock = threading.Lock()
         self.idle_timeout = timedelta(minutes=idle_timeout_minutes)
-        self._cleanup_thread = None
-        self._start_cleanup_thread()
-
-    def _start_cleanup_thread(self):
-        """Start the background cleanup thread."""
         self._cleanup_thread = threading.Thread(target=self._cleanup_worker, daemon=True)
         self._cleanup_thread.start()
         logger.info("Started Weaviate pool cleanup thread")
@@ -92,19 +85,17 @@ class WeaviatePool:
         """Clean expired clients from the pool."""
         with self._lock:
             current_time = datetime.now()
-            expired_users = []
-            
-            for user_id, wrapper in self._pool.items():
+            expired_counts = 0
+            for user_id in list(self._pool.keys()):
+                wrapper = self._pool[user_id]
                 if current_time - wrapper.last_used > self.idle_timeout:
-                    expired_users.append(user_id)
+                    wrapper.close()
+                    del self._pool[user_id]
+                    expired_counts += 1
+                    logger.info(f"Cleaned expired Weaviate client for user {user_id}")
             
-            for user_id in expired_users:
-                wrapper = self._pool.pop(user_id)
-                wrapper.close()
-                logger.info(f"Cleaned expired Weaviate client for user {user_id}")
-            
-            if expired_users:
-                logger.info(f"Cleaned {len(expired_users)} expired connections")
+            if expired_counts > 0:
+                logger.info(f"Cleaned {expired_counts} expired connections")
 
     def get_pool_status(self):
         """Get current pool status for debugging."""
@@ -122,7 +113,8 @@ class WeaviatePool:
         
         if not is_alive:
             logger.warning("Cleanup thread is dead, restarting...")
-            self._start_cleanup_thread()
+            self._cleanup_thread = threading.Thread(target=self._cleanup_worker, daemon=True)
+            self._cleanup_thread.start()
             return {"status": "restarted", "thread_alive": True}
         else:
             return {"status": "healthy", "thread_alive": True}
