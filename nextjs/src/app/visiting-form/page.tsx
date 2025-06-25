@@ -49,7 +49,7 @@ export default function VisitingFormPage() {
             </div>
             
             <div className="text-center text-sm text-muted-foreground mt-8">
-              Don't see your school? Contact us for assistance.
+              Don&apos;t see your school? Contact us for assistance.
             </div>
           </CardContent>
         </Card>

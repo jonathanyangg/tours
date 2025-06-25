@@ -101,23 +101,7 @@ export default function TourGuides() {
     );
   };
 
-  const getStatusBadgeVariant = (status: string) => {
-    switch (status.toLowerCase()) {
-      case 'residential':
-        return 'default';
-      case 'commuter':
-        return 'secondary';
-      default:
-        return 'outline';
-    }
-  };
 
-  const getGradeBadgeColor = (grade: string) => {
-    const gradeNum = parseInt(grade);
-    if (gradeNum <= 2) return 'bg-blue-100 text-blue-800 hover:bg-blue-100';
-    if (gradeNum <= 4) return 'bg-purple-100 text-purple-800 hover:bg-purple-100';
-    return 'bg-green-100 text-green-800 hover:bg-green-100';
-  };
 
   return (
     <div className="space-y-6">

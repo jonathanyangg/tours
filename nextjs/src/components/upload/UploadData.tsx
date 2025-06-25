@@ -8,18 +8,19 @@ import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
 import { 
-
   CheckCircle2, 
   Download, 
   Users,
-  Database
+  Database,
+  AlertCircle
 } from 'lucide-react';
+import { UploadResult } from '@/types/api';
 
 export default function UploadData() {
-  const [uploadResult, setUploadResult] = useState<any>(null);
+  const [uploadResult, setUploadResult] = useState<UploadResult | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
 
-  const handleUploadSuccess = (data: any) => {
+  const handleUploadSuccess = (data: UploadResult) => {
     setUploadResult(data);
     setUploadError(null);
   };
@@ -64,6 +65,18 @@ export default function UploadData() {
                     {JSON.stringify(uploadResult, null, 2)}
                   </pre>
                 </details>
+              </div>
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {uploadError && (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              <div className="space-y-1">
+                <div className="font-medium">Upload Failed</div>
+                <div className="text-sm">{uploadError}</div>
               </div>
             </AlertDescription>
           </Alert>
